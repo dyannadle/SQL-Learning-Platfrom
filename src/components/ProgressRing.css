@@ -1,0 +1,42 @@
+.progress-ring-container {
+    display: flex;
+    justify-content: center;
+    position: relative;
+}
+
+.progress-ring-svg {
+    transform: rotate(-90deg);
+}
+
+.progress-ring-circle {
+    transition: stroke-dashoffset 0.5s ease-in-out;
+}
+
+.progress-label {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-weight: 700;
+    font-size: 1.1rem;
+    font-family: var(--font-body);
+    color: var(--text-primary);
+}
+
+@keyframes pulseGlow {
+    0% {
+        filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.4));
+    }
+
+    50% {
+        filter: drop-shadow(0 0 10px rgba(34, 211, 238, 0.8));
+    }
+
+    100% {
+        filter: drop-shadow(0 0 4px rgba(34, 211, 238, 0.4));
+    }
+}
+
+.animate-pulse-glow {
+    animation: pulseGlow 3s infinite;
+}

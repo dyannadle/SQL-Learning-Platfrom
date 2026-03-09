@@ -1,0 +1,134 @@
+.query-plan-wrapper {
+    padding: 1.5rem;
+    font-family: var(--font-body);
+}
+
+.query-plan-header {
+    margin-bottom: 2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+    padding-bottom: 1rem;
+}
+
+.query-plan-tree {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.plan-node-container {
+    display: flex;
+    flex-direction: column;
+    margin-left: 20px;
+    position: relative;
+}
+
+/* Tree line rendering */
+.plan-node-container::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: -20px;
+    width: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 0;
+}
+
+/* Hide the vertical line for the last child's bottom half or root */
+.plan-children>.plan-node-container:last-child::before {
+    bottom: auto;
+    height: 24px;
+}
+
+.query-plan-tree>.plan-node-container::before {
+    display: none;
+}
+
+.query-plan-tree>.plan-node-container {
+    margin-left: 0;
+}
+
+
+/* Horizontal connection line */
+.plan-node-container:not(:first-child > .plan-node-container)::after,
+.plan-children>.plan-node-container::after {
+    content: '';
+    position: absolute;
+    top: 24px;
+    left: -20px;
+    width: 20px;
+    height: 2px;
+    background: rgba(255, 255, 255, 0.1);
+    z-index: 0;
+}
+
+.query-plan-tree>.plan-node-container::after {
+    display: none;
+}
+
+.plan-node {
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 16px;
+    border-radius: 8px;
+    border: 1px solid var(--border-subtle);
+    background: var(--bg-card);
+    margin-bottom: 1rem;
+    max-width: fit-content;
+    position: relative;
+    z-index: 1;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.plan-node:hover {
+    transform: translateY(-2px);
+    border-color: var(--accent-blue);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.15);
+}
+
+.plan-node-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+}
+
+.plan-type-scan {
+    background: rgba(16, 185, 129, 0.15);
+    color: var(--accent-green);
+}
+
+.plan-type-search {
+    background: rgba(34, 211, 238, 0.15);
+    color: var(--accent-cyan);
+}
+
+.plan-type-sort {
+    background: rgba(245, 158, 11, 0.15);
+    color: var(--accent-yellow);
+}
+
+.plan-type-subquery {
+    background: rgba(168, 85, 247, 0.15);
+    color: var(--accent-purple);
+}
+
+.plan-type-default {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.plan-node-detail {
+    font-family: var(--font-code);
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    line-height: 1.4;
+}
+
+.plan-children {
+    display: flex;
+    flex-direction: column;
+}
