@@ -1,202 +1,618 @@
-// Sample complete curriculum structure based on the learning path requirements.
+// Comprehensive SQL Curriculum Data for 220+ Lessons
 export const curriculumData = [
     {
         level: 0,
         id: 'level-0',
-        title: 'Database Foundations',
-        subtitle: 'Absolute Beginner',
+        title: 'Data & Database Foundations',
+        subtitle: 'Absolute Beginner (15 Lessons)',
         description: 'Understand what databases are and why SQL exists.',
         icon: 'Database',
         modules: [
-            { id: 'm1', title: 'Introduction to Data', topics: ['What is data', 'Types of data', 'Structured vs unstructured', 'Data lifecycle'] },
-            { id: 'm2', title: 'What is a Database', topics: ['Definition', 'File system vs database', 'DBMS vs RDBMS', 'Examples', 'Use cases'] },
-            { id: 'm3', title: 'Types of Databases', topics: ['Relational', 'NoSQL', 'Graph', 'Column', 'Document', 'Key-value'] },
-            { id: 'm4', title: 'Database Architecture', topics: ['Client-server model', '2-tier', '3-tier', 'Database engine', 'Storage engine'] },
-            { id: 'm5', title: 'Installing Databases', topics: ['MySQL', 'PostgreSQL', 'MongoDB', 'SQLite', 'pgAdmin', 'MongoDB Compass'] },
+            {
+                id: 'm1',
+                title: 'Introduction to Data',
+                topics: [
+                    'What is data',
+                    'Types of data',
+                    'Structured vs unstructured data',
+                    'Evolution of databases',
+                    'File systems vs databases'
+                ]
+            },
+            {
+                id: 'm2',
+                title: 'Database Management Systems',
+                topics: [
+                    'What is DBMS',
+                    'What is RDBMS',
+                    'Examples of DBMS',
+                    'SQL history',
+                    'SQL standards'
+                ]
+            },
+            {
+                id: 'm3',
+                title: 'Architecture & Models',
+                topics: [
+                    'SQL dialects',
+                    'Database architecture',
+                    'Client-server model',
+                    'OLTP vs OLAP',
+                    'Relational vs NoSQL databases'
+                ]
+            }
         ]
     },
     {
         level: 1,
         id: 'level-1',
         title: 'SQL Basics',
-        subtitle: 'Foundation Level',
-        description: 'Make user comfortable writing SQL queries.',
+        subtitle: 'Foundation Level (25 Lessons)',
+        description: 'Writing your first SQL queries.',
         icon: 'Terminal',
         modules: [
-            { id: 'm6', title: 'SQL Introduction', topics: ['What is SQL', 'History', 'Standards', 'Dialects'] },
-            { id: 'm7', title: 'Database Objects', topics: ['Database', 'Table', 'Row', 'Column', 'Schema'] },
-            { id: 'm8', title: 'Data Types', topics: ['Numeric', 'String', 'Date & time', 'Boolean', 'Binary'] },
-            { id: 'm9', title: 'Creating Tables', topics: ['CREATE DATABASE', 'CREATE TABLE', 'Column definition', 'Default values', 'Comments'] },
-            { id: 'm10', title: 'CRUD Operations', topics: ['INSERT', 'SELECT', 'UPDATE', 'DELETE'] },
-            { id: 'm11', title: 'SELECT Deep Dive', topics: ['Syntax', 'Column selection', 'DISTINCT', 'LIMIT', 'OFFSET'] },
-            { id: 'm12', title: 'Filtering Data', topics: ['WHERE clause', 'Comparison operators', 'Logical operators', 'BETWEEN', 'IN', 'LIKE'] },
-            { id: 'm13', title: 'Sorting', topics: ['ORDER BY', 'ASC vs DESC', 'Multi column sorting'] },
+            {
+                id: 'm4',
+                title: 'SQL Syntax & Schema',
+                topics: [
+                    'SQL syntax basics',
+                    'SQL keywords',
+                    'SQL statements',
+                    'Database schema',
+                    'Tables and rows'
+                ]
+            },
+            {
+                id: 'm5',
+                title: 'Data Types',
+                topics: [
+                    'Data types overview',
+                    'Numeric data types',
+                    'String data types',
+                    'Date and time types',
+                    'Boolean types'
+                ]
+            },
+            {
+                id: 'm6',
+                title: 'Table Operations',
+                topics: [
+                    'CREATE DATABASE',
+                    'CREATE TABLE',
+                    'INSERT INTO',
+                    'SELECT basics',
+                    'SELECT specific columns'
+                ]
+            },
+            {
+                id: 'm7',
+                title: 'Basic Filtering',
+                topics: [
+                    'SELECT DISTINCT',
+                    'LIMIT & OFFSET',
+                    'WHERE clause',
+                    'Comparison operators',
+                    'Logical operators'
+                ]
+            },
+            {
+                id: 'm8',
+                title: 'Advanced Filtering & Sorting',
+                topics: [
+                    'IN operator',
+                    'BETWEEN',
+                    'LIKE operator',
+                    'Wildcards',
+                    'ORDER BY'
+                ]
+            }
         ]
     },
     {
         level: 2,
         id: 'level-2',
-        title: 'Intermediate SQL',
-        subtitle: 'Manipulations & Relationships',
-        description: 'Learn data manipulation & relationships.',
-        icon: 'GitMerge',
+        title: 'Data Manipulation',
+        subtitle: 'Table Management (20 Lessons)',
+        description: 'Modifying data and table structures.',
+        icon: 'RotateCcw',
         modules: [
-            { id: 'm14', title: 'Aggregate Functions', topics: ['COUNT', 'SUM', 'AVG', 'MIN', 'MAX'] },
-            { id: 'm15', title: 'GROUP BY', topics: ['Grouping data', 'Aggregations with grouping', 'HAVING clause'] },
-            { id: 'm16', title: 'SQL Joins (Critical)', topics: ['INNER', 'LEFT', 'RIGHT', 'FULL', 'CROSS', 'SELF'] },
-            { id: 'm17', title: 'Subqueries', topics: ['Scalar', 'Correlated', 'Nested', 'Subqueries in SELECT'] },
-            { id: 'm18', title: 'Set Operations', topics: ['UNION', 'UNION ALL', 'INTERSECT', 'EXCEPT'] },
-            { id: 'm19', title: 'CASE Statements', topics: ['Conditional logic', 'CASE WHEN', 'Nested CASE'] },
-            { id: 'm20', title: 'Views', topics: ['What are views', 'Creating', 'Updating', 'Materialized'] },
+            {
+                id: 'm9',
+                title: 'CRUD & DDL',
+                topics: [
+                    'UPDATE statement',
+                    'DELETE statement',
+                    'TRUNCATE',
+                    'ALTER TABLE',
+                    'ADD column'
+                ]
+            },
+            {
+                id: 'm10',
+                title: 'Modifying Structures',
+                topics: [
+                    'DROP column',
+                    'MODIFY column',
+                    'Rename table',
+                    'Rename column',
+                    'Constraints overview'
+                ]
+            },
+            {
+                id: 'm11',
+                title: 'Keys & Constraints',
+                topics: [
+                    'PRIMARY KEY',
+                    'FOREIGN KEY',
+                    'UNIQUE',
+                    'NOT NULL',
+                    'CHECK constraint'
+                ]
+            },
+            {
+                id: 'm12',
+                title: 'Advanced Keys',
+                topics: [
+                    'DEFAULT values',
+                    'Auto increment',
+                    'Composite keys',
+                    'Surrogate keys',
+                    'Natural keys'
+                ]
+            }
         ]
     },
     {
         level: 3,
         id: 'level-3',
-        title: 'Advanced SQL',
-        subtitle: 'Professional Level',
-        description: 'Make user industry ready.',
+        title: 'Querying Data Deeply',
+        subtitle: 'Aggregations & Logic (20 Lessons)',
+        description: 'Diving into data analysis.',
         icon: 'BarChart',
         modules: [
-            { id: 'm21', title: 'Window Functions', topics: ['OVER clause', 'ROW_NUMBER', 'RANK', 'DENSE_RANK', 'NTILE', 'LEAD', 'LAG'] },
-            { id: 'm22', title: 'CTEs', topics: ['WITH clause', 'Recursive CTE', 'Hierarchical queries'] },
-            { id: 'm23', title: 'Advanced Aggregation', topics: ['GROUPING SETS', 'ROLLUP', 'CUBE'] },
-            { id: 'm24', title: 'Pivoting Data', topics: ['Pivot tables', 'Unpivot'] },
-            { id: 'm25', title: 'JSON in SQL', topics: ['JSON data types', 'JSON queries', 'JSON indexing'] },
+            {
+                id: 'm13',
+                title: 'Basic Aggregates',
+                topics: [
+                    'Aggregate functions overview',
+                    'COUNT',
+                    'SUM',
+                    'AVG',
+                    'MIN'
+                ]
+            },
+            {
+                id: 'm14',
+                title: 'Grouping Data',
+                topics: [
+                    'MAX',
+                    'GROUP BY',
+                    'HAVING',
+                    'Multi-column grouping',
+                    'Aggregate filtering'
+                ]
+            },
+            {
+                id: 'm15',
+                title: 'Conditional Logic',
+                topics: [
+                    'CASE statements',
+                    'Conditional logic',
+                    'Derived columns',
+                    'Expressions in SQL',
+                    'NULL handling'
+                ]
+            },
+            {
+                id: 'm16',
+                title: 'Formatting & Aliases',
+                topics: [
+                    'COALESCE',
+                    'NULLIF',
+                    'IFNULL',
+                    'Data formatting',
+                    'Aliases'
+                ]
+            }
         ]
     },
     {
         level: 4,
         id: 'level-4',
-        title: 'Database Design',
-        subtitle: 'Very Important',
-        description: 'Teach how to design real databases.',
-        icon: 'Layout',
+        title: 'SQL Joins (Critical)',
+        subtitle: 'Relational Mastery (20 Lessons)',
+        description: 'Connecting the dots between data.',
+        icon: 'GitMerge',
         modules: [
-            { id: 'm26', title: 'Data Modeling', topics: ['Conceptual model', 'Logical model', 'Physical model'] },
-            { id: 'm27', title: 'ER Diagrams', topics: ['Entities', 'Relationships', 'Cardinality', 'Weak entities'] },
-            { id: 'm28', title: 'Normalization', topics: ['1NF', '2NF', '3NF', 'BCNF', 'Denormalization'] },
-            { id: 'm29', title: 'Keys', topics: ['Primary key', 'Foreign key', 'Candidate key', 'Composite key', 'Surrogate key'] },
-            { id: 'm30', title: 'Constraints', topics: ['NOT NULL', 'UNIQUE', 'CHECK', 'DEFAULT', 'FOREIGN KEY'] },
+            {
+                id: 'm17',
+                title: 'Join Fundamentals',
+                topics: [
+                    'Why joins exist',
+                    'Relational modeling basics',
+                    'INNER JOIN',
+                    'LEFT JOIN',
+                    'RIGHT JOIN'
+                ]
+            },
+            {
+                id: 'm18',
+                title: 'Advanced Join Types',
+                topics: [
+                    'FULL JOIN',
+                    'CROSS JOIN',
+                    'SELF JOIN',
+                    'Multi-table joins',
+                    'Join conditions'
+                ]
+            },
+            {
+                id: 'm19',
+                title: 'Specialized Joins',
+                topics: [
+                    'Join filtering',
+                    'Join performance',
+                    'Join vs subquery',
+                    'Anti joins',
+                    'Semi joins'
+                ]
+            },
+            {
+                id: 'm20',
+                title: 'Join Optimization',
+                topics: [
+                    'Natural joins',
+                    'Join pitfalls',
+                    'Duplicate rows',
+                    'Join optimization',
+                    'Join debugging'
+                ]
+            }
         ]
     },
     {
         level: 5,
         id: 'level-5',
-        title: 'Performance Optimization',
-        subtitle: 'Senior Level',
-        description: 'Teach how senior SQL developers optimize databases.',
-        icon: 'Zap',
+        title: 'Subqueries & CTE',
+        subtitle: 'Complex Logic (20 Lessons)',
+        description: 'Structuring nested and hierarchical queries.',
+        icon: 'Layers',
         modules: [
-            { id: 'm31', title: 'Indexing', topics: ['What is index', 'B-tree index', 'Hash index', 'Composite index', 'Covering index'] },
-            { id: 'm32', title: 'Query Optimization', topics: ['Query planner', 'Query cost', 'Execution plans', 'EXPLAIN'] },
-            { id: 'm33', title: 'Transactions', topics: ['ACID properties', 'Transaction isolation levels', 'Dirty reads', 'Phantom reads'] },
-            { id: 'm34', title: 'Locking', topics: ['Row locking', 'Table locking', 'Deadlocks', 'Optimistic vs pessimistic'] },
-            { id: 'm35', title: 'Partitioning', topics: ['Horizontal partitioning', 'Vertical partitioning', 'Sharding'] },
+            {
+                id: 'm21',
+                title: 'Subquery Basics',
+                topics: [
+                    'Subquery basics',
+                    'Scalar subqueries',
+                    'Correlated subqueries',
+                    'Subqueries in SELECT',
+                    'Subqueries in WHERE'
+                ]
+            },
+            {
+                id: 'm22',
+                title: 'Existential Checks',
+                topics: [
+                    'Subqueries in FROM',
+                    'EXISTS',
+                    'NOT EXISTS',
+                    'IN vs EXISTS',
+                    'WITH clause'
+                ]
+            },
+            {
+                id: 'm23',
+                title: 'CTE Mastery',
+                topics: [
+                    'CTE basics',
+                    'Recursive CTE',
+                    'Hierarchical queries',
+                    'Tree structures',
+                    'Graph queries'
+                ]
+            },
+            {
+                id: 'm24',
+                title: 'Advanced Structure',
+                topics: [
+                    'Nested CTEs',
+                    'CTE optimization',
+                    'Query refactoring',
+                    'Complex query patterns',
+                    'Query readability'
+                ]
+            }
         ]
     },
     {
         level: 6,
         id: 'level-6',
-        title: 'PostgreSQL Deep Dive',
-        subtitle: 'Advanced Engine',
-        description: 'Internals and advanced features of PostgreSQL.',
-        icon: 'Server',
+        title: 'Advanced SQL',
+        subtitle: 'Analytical Power (25 Lessons)',
+        description: 'Professional reporting and analytics.',
+        icon: 'Zap',
         modules: [
-            { id: 'm36', title: 'PostgreSQL Architecture', topics: ['Postgres internals', 'Write ahead log', 'Buffer manager'] },
-            { id: 'm37', title: 'PostgreSQL Features', topics: ['Arrays', 'JSONB', 'Full text search'] },
-            { id: 'm38', title: 'Stored Procedures', topics: ['Functions', 'Triggers', 'PL/pgSQL'] },
-            { id: 'm39', title: 'Postgres Performance', topics: ['Index types', 'VACUUM', 'ANALYZE'] },
+            {
+                id: 'm25',
+                title: 'Window Functions Intro',
+                topics: [
+                    'Window functions intro',
+                    'OVER clause',
+                    'ROW_NUMBER',
+                    'RANK',
+                    'DENSE_RANK'
+                ]
+            },
+            {
+                id: 'm26',
+                title: 'Ranking & Navigation',
+                topics: [
+                    'NTILE',
+                    'LEAD',
+                    'LAG',
+                    'Running totals',
+                    'Moving averages'
+                ]
+            },
+            {
+                id: 'm27',
+                title: 'Advanced Windowing',
+                topics: [
+                    'Partitioning window functions',
+                    'Ranking use cases',
+                    'Analytical queries',
+                    'Pivot tables',
+                    'Unpivot'
+                ]
+            },
+            {
+                id: 'm28',
+                title: 'Complex Aggregations',
+                topics: [
+                    'Advanced aggregations',
+                    'GROUPING SETS',
+                    'ROLLUP',
+                    'CUBE',
+                    'Complex analytics'
+                ]
+            },
+            {
+                id: 'm29',
+                title: 'Time-Series Analysis',
+                topics: [
+                    'Time-series queries',
+                    'Gap detection',
+                    'Session analysis',
+                    'Top-N queries',
+                    'Advanced reporting'
+                ]
+            }
         ]
     },
     {
         level: 7,
         id: 'level-7',
-        title: 'NoSQL Fundamentals',
-        subtitle: 'Beyond Relational',
-        description: 'When and why to use NoSQL.',
-        icon: 'Layers',
+        title: 'Database Design',
+        subtitle: 'System Architecture (20 Lessons)',
+        description: 'Designing robust and scalable schemas.',
+        icon: 'Layout',
         modules: [
-            { id: 'm40', title: 'Why NoSQL Exists', topics: ['Scalability', 'Big data', 'CAP theorem'] },
-            { id: 'm41', title: 'Types of NoSQL', topics: ['Document DB', 'Key-value DB', 'Column DB', 'Graph DB'] },
-            { id: 'm42', title: 'SQL vs NoSQL', topics: ['Comparisons', 'Use Cases'] },
+            {
+                id: 'm30',
+                title: 'Modeling Concepts',
+                topics: [
+                    'Data modeling basics',
+                    'Conceptual models',
+                    'Logical models',
+                    'Physical models',
+                    'ER diagrams'
+                ]
+            },
+            {
+                id: 'm31',
+                title: 'ER Modeling',
+                topics: [
+                    'Entities',
+                    'Relationships',
+                    'Cardinality',
+                    'Normalization intro',
+                    'First normal form'
+                ]
+            },
+            {
+                id: 'm32',
+                title: 'Normalization Deep Dive',
+                topics: [
+                    'Second normal form',
+                    'Third normal form',
+                    'BCNF',
+                    'Denormalization',
+                    'Schema design patterns'
+                ]
+            },
+            {
+                id: 'm33',
+                title: 'Schema Architectures',
+                topics: [
+                    'Fact tables',
+                    'Dimension tables',
+                    'Star schema',
+                    'Snowflake schema',
+                    'Data warehouse modeling'
+                ]
+            }
         ]
     },
     {
         level: 8,
         id: 'level-8',
-        title: 'MongoDB Deep Dive',
-        subtitle: 'Document DBs',
-        description: 'Master the most popular NoSQL database.',
-        icon: 'Leaf',
+        title: 'Performance Engineering',
+        subtitle: 'Speed & Scale (20 Lessons)',
+        description: 'Optimizing for high-performance apps.',
+        icon: 'Activity',
         modules: [
-            { id: 'm43', title: 'MongoDB Basics', topics: ['Collections', 'Documents', 'BSON'] },
-            { id: 'm44', title: 'CRUD Operations', topics: ['insertOne', 'insertMany', 'find', 'update', 'delete'] },
-            { id: 'm45', title: 'Query Operators', topics: ['$eq', '$gt', '$lt', '$in', '$regex'] },
-            { id: 'm46', title: 'Aggregation Pipeline', topics: ['$match', '$group', '$project', '$sort', '$lookup'] },
-            { id: 'm47', title: 'Indexing in MongoDB', topics: ['Single field', 'Compound', 'Text'] },
-            { id: 'm48', title: 'Replication', topics: ['Replica sets', 'Primary/Secondary'] },
-            { id: 'm49', title: 'Sharding', topics: ['Shard keys', 'Clusters'] },
+            {
+                id: 'm34',
+                title: 'Indexing Fundamentals',
+                topics: [
+                    'Query performance basics',
+                    'Indexes intro',
+                    'B-tree indexes',
+                    'Hash indexes',
+                    'Composite indexes'
+                ]
+            },
+            {
+                id: 'm35',
+                title: 'Advanced Indexing',
+                topics: [
+                    'Covering indexes',
+                    'Index design',
+                    'Query planner',
+                    'Execution plans',
+                    'EXPLAIN ANALYZE'
+                ]
+            },
+            {
+                id: 'm36',
+                title: 'Query Optimization',
+                topics: [
+                    'Query optimization',
+                    'Slow query debugging',
+                    'Database caching',
+                    'Materialized views',
+                    'Partitioning'
+                ]
+            },
+            {
+                id: 'm37',
+                title: 'Scaling Strategies',
+                topics: [
+                    'Horizontal partitioning',
+                    'Vertical partitioning',
+                    'Sharding',
+                    'Read replicas',
+                    'Scaling databases'
+                ]
+            }
         ]
     },
     {
         level: 9,
         id: 'level-9',
-        title: 'Real World Database Engineering',
-        subtitle: 'Production Sys',
-        description: 'Running db at scale.',
+        title: 'Transactions & Concurrency',
+        subtitle: 'Data Integrity (10 Lessons)',
+        description: 'Managing safe concurrent data access.',
         icon: 'Shield',
         modules: [
-            { id: 'm50', title: 'Database Security', topics: ['Authentication', 'Authorization', 'Encryption'] },
-            { id: 'm51', title: 'Backup & Recovery', topics: ['Full backup', 'Incremental backup', 'Disaster recovery'] },
-            { id: 'm52', title: 'Database Monitoring', topics: ['Metrics', 'Alerts'] },
-            { id: 'm53', title: 'High Availability', topics: ['Failover', 'Redundancy'] },
+            {
+                id: 'm38',
+                title: 'ACID & Transactions',
+                topics: [
+                    'ACID properties',
+                    'Transactions',
+                    'COMMIT',
+                    'ROLLBACK',
+                    'Isolation levels'
+                ]
+            },
+            {
+                id: 'm39',
+                title: 'Concurrency Issues',
+                topics: [
+                    'Dirty reads',
+                    'Non-repeatable reads',
+                    'Phantom reads',
+                    'Locking mechanisms',
+                    'Deadlocks'
+                ]
+            }
         ]
     },
     {
         level: 10,
         id: 'level-10',
-        title: 'SQL for Data Engineering',
-        subtitle: 'Pipelines & Warehouses',
-        description: 'Data analytics architectures.',
-        icon: 'Briefcase',
+        title: 'PostgreSQL Deep Dive',
+        subtitle: 'Engine Internals (15 Lessons)',
+        description: 'Mastering the worlds advanced RDBMS.',
+        icon: 'Server',
         modules: [
-            { id: 'm54', title: 'ETL Pipelines', topics: ['Extract', 'Transform', 'Load'] },
-            { id: 'm55', title: 'Data Warehousing', topics: ['Concepts', 'Architecture'] },
-            { id: 'm56', title: 'OLTP vs OLAP', topics: ['Differences', 'Use cases'] },
-            { id: 'm57', title: 'Star Schema', topics: ['Fact tables', 'Dimension tables'] },
-            { id: 'm58', title: 'Snowflake Schema', topics: ['Normalized dimensions'] },
+            {
+                id: 'm40',
+                title: 'Postgres Core',
+                topics: [
+                    'PostgreSQL architecture',
+                    'Storage engine',
+                    'WAL (Write Ahead Log)',
+                    'JSONB support',
+                    'Arrays in Postgres'
+                ]
+            },
+            {
+                id: 'm41',
+                title: 'Advanced Search & Index',
+                topics: [
+                    'Full text search',
+                    'Postgres indexes',
+                    'GIN indexes',
+                    'GiST indexes',
+                    'Stored procedures'
+                ]
+            },
+            {
+                id: 'm42',
+                title: 'Triggers & Tuning',
+                topics: [
+                    'Triggers',
+                    'PL/pgSQL',
+                    'VACUUM',
+                    'ANALYZE',
+                    'Performance tuning'
+                ]
+            }
         ]
     },
     {
         level: 11,
         id: 'level-11',
-        title: 'SQL Interview Preparation',
-        subtitle: 'Get Hired',
-        description: 'Ace your technical interviews.',
-        icon: 'Award',
+        title: 'MongoDB & NoSQL',
+        subtitle: 'Distributed Systems (15 Lessons)',
+        description: 'Document databases and horizontal scale.',
+        icon: 'Globe',
         modules: [
-            { id: 'm59', title: '300 SQL Interview Questions', topics: ['Beginner', 'Intermediate', 'Advanced'] },
-            { id: 'm60', title: 'SQL Coding Challenges', topics: ['Easy (100)', 'Medium (200)', 'Hard (200)'] },
-        ]
-    },
-    {
-        level: 12,
-        id: 'level-12',
-        title: 'Real Projects',
-        subtitle: 'Portfolio Building',
-        description: 'Build end-to-end practical projects.',
-        icon: 'Briefcase',
-        modules: [
-            { id: 'p1', title: 'E-commerce database', topics: ['Schema', 'Queries', 'Optimization'] },
-            { id: 'p2', title: 'Banking system', topics: ['Transactions', 'Consistency', 'Audit logs'] },
-            { id: 'p3', title: 'Social media database', topics: ['Graphs', 'Feeds', 'Likes'] },
-            { id: 'p4', title: 'Netflix recommendation data', topics: ['Views', 'Ratings', 'Analytics'] },
-            { id: 'p5', title: 'Trading database', topics: ['High-frequency', 'Time-series', 'Ledger'] },
+            {
+                id: 'm43',
+                title: 'BSON & Documents',
+                topics: [
+                    'NoSQL introduction',
+                    'CAP theorem',
+                    'MongoDB architecture',
+                    'Collections & documents',
+                    'BSON format'
+                ]
+            },
+            {
+                id: 'm44',
+                title: 'Mongo CRUD & Aggs',
+                topics: [
+                    'CRUD operations',
+                    'Query operators',
+                    'Aggregation pipeline',
+                    'Indexing in MongoDB',
+                    'Replication'
+                ]
+            },
+            {
+                id: 'm45',
+                title: 'Sharding & Integrity',
+                topics: [
+                    'Sharding',
+                    'Transactions in MongoDB',
+                    'Schema design',
+                    'MongoDB performance',
+                    'Real world use cases'
+                ]
+            }
         ]
     }
 ];
-
-export const getIconComponent = (iconName) => {
-    return iconName; // In a real app, map this string to the Lucide icon component.
-};

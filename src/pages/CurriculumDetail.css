@@ -238,3 +238,155 @@
         height: auto;
     }
 }
+
+/* Lesson Tabs Style */
+.lesson-tabs {
+    display: flex;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+    border-bottom: 1px solid var(--border-subtle);
+}
+
+.lesson-tab-btn {
+    background: none;
+    border: none;
+    padding: 0.75rem 0.25rem;
+    color: var(--text-muted);
+    font-weight: 500;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    border-bottom: 2px solid transparent;
+}
+
+.lesson-tab-btn:hover {
+    color: var(--text-primary);
+}
+
+.lesson-tab-btn.active {
+    color: var(--accent-cyan);
+    border-bottom-color: var(--accent-cyan);
+}
+
+/* Lab & Quiz Content */
+.lab-tasks {
+    list-style: disc;
+    padding-left: 1.5rem;
+    margin: 1.5rem 0;
+}
+
+.lab-tasks li {
+    margin-bottom: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.interview-q {
+    margin-bottom: 2rem;
+}
+
+.ans-hint {
+    background: rgba(255, 255, 255, 0.03);
+    padding: 0.8rem 1rem;
+    border-radius: 6px;
+    margin-top: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--text-muted);
+    font-style: italic;
+    border-left: 3px solid var(--accent-purple);
+}
+
+.quiz-question {
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+}
+
+.option-btn {
+    width: 100%;
+    text-align: left;
+    padding: 1rem;
+    background: rgba(10, 14, 39, 0.6);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.option-btn:hover {
+    border-color: var(--accent-blue);
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--text-primary);
+}
+
+.secondary-btn.completed {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: white;
+}
+
+/* AI Assistant Styles */
+.ai-assistant-toggle {
+    position: absolute;
+    top: -50px;
+    right: 0;
+    background: rgba(99, 102, 241, 0.1);
+    color: var(--accent-cyan);
+    padding: 8px 16px;
+    border-radius: 100px;
+    border: 1px solid rgba(34, 211, 238, 0.3);
+    font-size: 0.85rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+
+.ai-assistant-toggle:hover {
+    background: rgba(34, 211, 238, 0.15);
+    box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+}
+
+.ai-sidebar {
+    position: absolute;
+    top: 0;
+    right: 0;
+    width: 300px;
+    height: 100%;
+    background: var(--bg-card);
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+    border-left: 1px solid var(--border-subtle);
+}
+
+.ai-msg {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+    border-radius: 8px 8px 8px 0;
+    color: var(--text-secondary);
+}
+
+.animate-slide-in-right {
+    animation: slideInRight 0.3s ease-out;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.lesson-editor-side {
+    position: relative;
+}

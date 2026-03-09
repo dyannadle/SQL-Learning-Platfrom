@@ -1,0 +1,73 @@
+.achievement-toast-container {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    z-index: 1000;
+}
+
+.achievement-toast {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem 1.5rem;
+    min-width: 300px;
+    background: rgba(10, 14, 39, 0.9);
+    border: 1px solid var(--accent-blue);
+    box-shadow: 0 0 30px rgba(99, 102, 241, 0.3);
+    border-radius: 12px;
+}
+
+.toast-icon {
+    width: 40px;
+    height: 40px;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.toast-content {
+    flex: 1;
+}
+
+.toast-title {
+    font-weight: 800;
+    font-size: 0.9rem;
+    margin: 0;
+    color: var(--text-primary);
+}
+
+.toast-desc {
+    font-size: 0.8rem;
+    margin: 4px 0 0 0;
+    color: var(--text-muted);
+}
+
+.toast-close {
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 4px;
+}
+
+.toast-close:hover {
+    color: white;
+}
+
+.animate-slide-in-up {
+    animation: slideInUp 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes slideInUp {
+    from {
+        transform: translateY(100px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}

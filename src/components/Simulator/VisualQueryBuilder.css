@@ -1,0 +1,40 @@
+.active-tag {
+    background: var(--accent-blue) !important;
+    color: white !important;
+    border-color: var(--accent-blue) !important;
+}
+
+.builder-controls .tag-pill {
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid var(--border-subtle);
+}
+
+.sql-preview-box {
+    background: #0d1117;
+    border: 1px solid var(--border-subtle);
+    min-height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sql-preview-box pre {
+    white-space: pre-wrap;
+    line-height: 1.6;
+}
+
+.copy-btn {
+    opacity: 0.6;
+    transition: opacity 0.2s;
+}
+
+.copy-btn:hover {
+    opacity: 1;
+}
+
+@media (max-width: 1024px) {
+    .builder-layout {
+        grid-template-columns: 1fr;
+    }
+}

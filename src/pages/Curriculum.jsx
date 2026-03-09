@@ -8,7 +8,7 @@ const Curriculum = () => {
         <div className="curriculum-container animate-fade-in">
             <div className="curriculum-header text-center">
                 <h1 className="page-title">SQL <span className="gradient-text">Mastery Curriculum</span></h1>
-                <p className="page-subtitle">The complete 13-stage journey from zero knowledge to Data Engineer.</p>
+                <p className="page-subtitle">The complete 12-stage journey from zero knowledge to Data Engineer.</p>
             </div>
 
             <div className="levels-grid">

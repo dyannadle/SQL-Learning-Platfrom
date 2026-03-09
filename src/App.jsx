@@ -2,15 +2,15 @@ import React from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import Layout from './components/Layout/Layout';
 
-// Placeholder Pages
-const Home = () => <div className="animate-slide-up"><h1>Home Page</h1></div>;
-const Curriculum = () => <div className="animate-slide-up"><h1>Curriculum Overview</h1></div>;
-const LevelDetail = () => <div className="animate-slide-up"><h1>Level Detail</h1></div>;
-const ModuleDetail = () => <div className="animate-slide-up"><h1>Module Detail</h1></div>;
-const TopicLesson = () => <div className="animate-slide-up"><h1>Topic Lesson</h1></div>;
-const SQLEditor = () => <div className="animate-slide-up"><h1>SQL Editor Playground</h1></div>;
-const Challenges = () => <div className="animate-slide-up"><h1>SQL Challenges</h1></div>;
-const ChallengeDetail = () => <div className="animate-slide-up"><h1>Challenge Detail</h1></div>;
+import Home from './pages/Home';
+import Curriculum from './pages/Curriculum';
+import LevelDetail from './pages/LevelDetail';
+import ModuleDetail from './pages/ModuleDetail';
+import TopicLesson from './pages/TopicLesson';
+import SQLEditor from './pages/SQLEditor';
+import Challenges from './pages/Challenges';
+import ChallengeDetail from './pages/ChallengeDetail';
+import NotificationToast from './components/NotificationToast';
 
 function App() {
   return (
@@ -26,6 +26,7 @@ function App() {
           <Route path="/challenges" element={<Challenges />} />
           <Route path="/challenges/:challengeId" element={<ChallengeDetail />} />
         </Routes>
+        <NotificationToast />
       </Layout>
     </BrowserRouter>
   );

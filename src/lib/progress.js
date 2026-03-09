@@ -19,7 +19,9 @@ export const markTopicComplete = (topicPathId) => {
     if (!p.completedTopics.includes(topicPathId)) {
         p.completedTopics.push(topicPathId);
         saveProgress(p);
+        return true;
     }
+    return false;
 };
 
 export const isTopicComplete = (topicPathId) => {
@@ -32,12 +34,29 @@ export const markChallengeSolved = (challengeId) => {
     if (!p.solvedChallenges.includes(challengeId)) {
         p.solvedChallenges.push(challengeId);
         saveProgress(p);
+        return true;
     }
+    return false;
 };
 
 export const isChallengeSolved = (challengeId) => {
     const p = getProgress();
     return p.solvedChallenges.includes(challengeId);
+};
+
+export const calculateXP = () => {
+    const p = getProgress();
+    const topicXP = p.completedTopics.length * 20;
+    const challengeXP = p.solvedChallenges.length * 100;
+    return topicXP + challengeXP;
+};
+
+export const getLevelInfo = (xp) => {
+    if (xp < 500) return { title: 'SQL Novice', next: 500, level: 1 };
+    if (xp < 1500) return { title: 'Query Specialist', next: 1500, level: 2 };
+    if (xp < 3500) return { title: 'Data Engineer', next: 3500, level: 3 };
+    if (xp < 7000) return { title: 'DB Architect', next: 7000, level: 4 };
+    return { title: 'SQL Grandmaster', next: Infinity, level: 5 };
 };
 
 export const calculateOverallProgress = (totalTopics) => {

@@ -1,7 +1,16 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { curriculumData } from '../data/curriculum';
-import { ArrowLeft, Terminal, Check } from 'lucide-react';
+import { ArrowLeft, Terminal, Check, BookOpen, Microscope, MessageSquare, HelpCircle } from 'lucide-react';
+import { markTopicComplete, isTopicComplete } from '../lib/progress';
+import JoinVisualizer from '../components/Simulator/JoinVisualizer';
+import IndexVisualizer from '../components/Simulator/IndexVisualizer';
+import VisualQueryBuilder from '../components/Simulator/VisualQueryBuilder';
+import QuizComponent from '../components/Quiz/QuizComponent';
+import { notifyAchievement } from '../components/NotificationToast';
+import { getLessonBody } from '../data/lessonContent';
+import { getAiResponse } from '../lib/aiService';
+import { Sparkles, X, Send, Loader2 } from 'lucide-react';
 import './CurriculumDetail.css';
 
 const TopicLesson = () => {
@@ -13,6 +22,25 @@ const TopicLesson = () => {
     // topicId format is 'topic-0', 'topic-1', etc.
     const tIdx = parseInt(topicId.split('-')[1]);
     const topicTitle = module?.topics[tIdx];
+    const topicPathId = `\${levelId}-\${moduleId}-\${tIdx}`;
+    const [completed, setCompleted] = React.useState(isTopicComplete(topicPathId));
+    const [activeTab, setActiveTab] = React.useState('theory'); // theory, lab, interview, quiz
+    const [isAiOpen, setIsAiOpen] = React.useState(false);
+    const [aiInput, setAiInput] = React.useState('');
+    const [chat, setChat] = React.useState([{ role: 'ai', msg: "Hi! I'm your SQL tutor. Ask me anything about this lesson!" }]);
+    const [isThinking, setIsThinking] = React.useState(false);
+    const content = getLessonBody(topicPathId);
+
+    const handleSend = async () => {
+        if (!aiInput.trim()) return;
+        const userMsg = aiInput;
+        setChat(prev => [...prev, { role: 'user', msg: userMsg }]);
+        setAiInput('');
+        setIsThinking(true);
+        const response = await getAiResponse(userMsg);
+        setChat(prev => [...prev, { role: 'ai', msg: response }]);
+        setIsThinking(false);
+    };
 
     if (!topicTitle) {
         return <div className="page-container"><h2>Topic Not Found</h2></div>;
@@ -30,36 +58,108 @@ const TopicLesson = () => {
 
             <div className="lesson-grid">
                 <div className="lesson-content glass-panel">
-                    <h1 className="lesson-title">{topicTitle}</h1>
-                    <div className="lesson-badge-row">
-                        <span className="badge badge-medium">Theory</span>
-                        <span className="badge badge-easy">Interactive</span>
+                    <div className="lesson-tabs flex gap-4 mb-6 border-b border-subtle">
+                        <button
+                            className={`lesson-tab-btn \${activeTab === 'theory' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('theory')}
+                        >
+                            <BookOpen size={16} /> Theory
+                        </button>
+                        <button
+                            className={`lesson-tab-btn \${activeTab === 'lab' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('lab')}
+                        >
+                            <Microscope size={16} /> Hands-on Lab
+                        </button>
+                        <button
+                            className={`lesson-tab-btn \${activeTab === 'interview' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('interview')}
+                        >
+                            <MessageSquare size={16} /> Interview Questions
+                        </button>
+                        <button
+                            className={`lesson-tab-btn \${activeTab === 'quiz' ? 'active' : ''}`}
+                            onClick={() => setActiveTab('quiz')}
+                        >
+                            <HelpCircle size={16} /> Quiz
+                        </button>
                     </div>
 
-                    <div className="markdown-content">
-                        <p>Welcome to <strong>{topicTitle}</strong>. This section covers the fundamental concepts required to advance to the next stage.</p>
+                    <h1 className="lesson-title">{topicTitle}</h1>
 
-                        <h3>Understanding {topicTitle}</h3>
-                        <p>In relational databases, it is extremely important to grasp how data transitions from raw storage to queryable views.</p>
+                    <div className="tab-content animate-fade-in">
+                        {activeTab === 'theory' && (
+                            <div className="markdown-content">
+                                <div dangerouslySetInnerHTML={{ __html: content.theory.replace(/\n/g, '<br/>') }} />
+                            </div>
+                        )}
 
-                        <div className="callout-box info">
-                            <strong>Note:</strong> This is a dynamic placeholder for the lesson content. In a production environment, this text would be fetched from a markdown file stored in the backend or local assets.
-                        </div>
+                        {activeTab === 'lab' && (
+                            <div className="markdown-content">
+                                {levelId === 'level-4' && <JoinVisualizer />}
+                                {levelId === 'level-8' && <IndexVisualizer />}
+                                {levelId === 'level-1' && <VisualQueryBuilder />}
 
-                        <h3>Code Example</h3>
-                        <pre><code><span className="sql-keyword">SELECT</span> * <span className="sql-keyword">FROM</span> users <span className="sql-keyword">WHERE</span> active = <span className="sql-op">true</span>;</code></pre>
+                                <p className="mt-6">{content.lab.mission}</p>
+                                <ul className="lab-tasks">
+                                    {content.lab.tasks.map((t, i) => <li key={i}>{t}</li>)}
+                                </ul>
+                                <div className="callout-box warning">
+                                    <strong>Lab Mission:</strong> Complete the tasks using the interactive editor.
+                                </div>
+                            </div>
+                        )}
 
-                        <p>Try running a similar query in the interactive editor to the right to see how it performs against the sample database.</p>
+                        {activeTab === 'interview' && (
+                            <div className="markdown-content">
+                                <p>Be prepared for your next technical interview with these target questions:</p>
+                                <div className="interview-q">
+                                    <strong>Q1: How would you explain {topicTitle} to a non-technical stakeholder?</strong>
+                                    <p className="ans-hint">Hint: Focus on the business value of structured data access.</p>
+                                </div>
+                                <div className="interview-q">
+                                    <strong>Q2: What are the performance trade-offs associated with {topicTitle}?</strong>
+                                    <p className="ans-hint">Hint: Mention index usage and CPU vs I/O balance.</p>
+                                </div>
+                            </div>
+                        )}
+
+                        {activeTab === 'quiz' && (
+                            <div className="markdown-content">
+                                <p>Test your knowledge before moving on:</p>
+                                <QuizComponent
+                                    question={`Which of the following is true about \${topicTitle}?`}
+                                    options={[
+                                        'It is a fundamental part of relational modeling',
+                                        'It should only be used in NoSQL databases',
+                                        'It has been deprecated in modern SQL'
+                                    ]}
+                                    correctAnswer={0}
+                                    explanation={`\${topicTitle} remains a core principle in SQL for managing complex data relationships and performance.`}
+                                />
+                            </div>
+                        )}
                     </div>
 
                     <div className="lesson-actions" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between' }}>
-                        <button className="secondary-btn"><Check size={18} /> Mark Complete</button>
+                        <button
+                            className={`secondary-btn \${completed ? 'completed' : ''}`}
+                            onClick={() => {
+                                if (!completed) {
+                                    markTopicComplete(topicPathId);
+                                    setCompleted(true);
+                                    notifyAchievement('Topic Mastered!', `You've completed \${topicTitle}. +20 XP`, 'badge');
+                                }
+                            }}
+                        >
+                            <Check size={18} /> {completed ? 'Completed' : 'Mark Complete'}
+                        </button>
                         {isNextTopic ? (
-                            <Link to={`/curriculum/${levelId}/${moduleId}/topic-${tIdx + 1}`} className="primary-btn">
+                            <Link to={`/curriculum/\${levelId}/\${moduleId}/topic-\${tIdx + 1}`} className="primary-btn">
                                 Next Topic
                             </Link>
                         ) : (
-                            <Link to={`/curriculum/${levelId}`} className="primary-btn">
+                            <Link to={`/curriculum/\${levelId}`} className="primary-btn">
                                 Finish Module
                             </Link>
                         )}
@@ -67,6 +167,41 @@ const TopicLesson = () => {
                 </div>
 
                 <div className="lesson-editor-side">
+                    <div className="ai-assistant-toggle" onClick={() => setIsAiOpen(true)}>
+                        <Sparkles size={16} /> AI SQL Assistant
+                    </div>
+
+                    {isAiOpen && (
+                        <div className="ai-sidebar glass-panel animate-slide-in-right">
+                            <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
+                                <span className="flex items-center gap-2 font-bold"><Sparkles size={16} className="text-accent-cyan" /> SQL Assistant</span>
+                                <X size={18} className="cursor-pointer" onClick={() => setIsAiOpen(false)} />
+                            </div>
+                            <div className="ai-body p-4 flex flex-col h-full overflow-hidden">
+                                <p className="text-sm text-muted mb-4">Ask me to generate a query or explain this lesson!</p>
+                                <div className="ai-chat flex flex-col gap-4 flex-1 overflow-auto">
+                                    {chat.map((c, i) => (
+                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm \${c.role === 'user' ? 'user-msg' : ''}`}>
+                                            {c.msg}
+                                        </div>
+                                    ))}
+                                    {isThinking && <Loader2 className="animate-spin text-accent-cyan mx-auto" size={16} />}
+                                </div>
+                                <div className="ai-input-container mt-4 pt-4 border-t border-subtle flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Ask tutoring..."
+                                        className="dataset-select w-full"
+                                        value={aiInput}
+                                        onChange={e => setAiInput(e.target.value)}
+                                        onKeyPress={e => e.key === 'Enter' && handleSend()}
+                                    />
+                                    <button className="primary-btn sm-btn" onClick={handleSend}><Send size={14} /></button>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+
                     <div className="mini-editor-wrapper glass-panel">
                         <div className="editor-header">
                             <span className="editor-title"><Terminal size={14} /> Interactive Practice</span>

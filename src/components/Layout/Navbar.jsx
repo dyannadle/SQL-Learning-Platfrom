@@ -1,10 +1,18 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Database, Code2, Trophy, BookOpen } from 'lucide-react';
+import { Database, Code2, Trophy, BookOpen, Star } from 'lucide-react';
+import { calculateXP, getLevelInfo } from '../../lib/progress';
 import './Navbar.css';
 
 const Navbar = () => {
     const location = useLocation();
+    const [xp, setXp] = React.useState(calculateXP());
+    const levelInfo = getLevelInfo(xp);
+
+    // Refresh XP on navigation (basic polling/trigger)
+    React.useEffect(() => {
+        setXp(calculateXP());
+    }, [location]);
 
     const navLinks = [
         { path: '/', label: 'Home', icon: <Database size={18} /> },
@@ -35,7 +43,19 @@ const Navbar = () => {
                 </div>
 
                 <div className="navbar-actions">
-                    <div className="progress-badge">Level 1: Beginner</div>
+                    <div className="xp-container flex-col items-end">
+                        <div className="flex items-center gap-2 mb-1">
+                            <Star size={14} className="text-accent-yellow" fill="var(--accent-yellow)" />
+                            <span className="xp-text">{xp} XP</span>
+                            <span className="level-badge">{levelInfo.title}</span>
+                        </div>
+                        <div className="xp-bar-bg">
+                            <div
+                                className="xp-bar-fill"
+                                style={{ width: `\${(xp / levelInfo.next) * 100}%` }}
+                            ></div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </nav>
