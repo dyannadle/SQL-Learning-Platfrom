@@ -12,11 +12,45 @@ import { notifyAchievement } from '../components/NotificationToast';
 import { getLessonBody } from '../data/lessonContent';
 import { getAiResponse } from '../lib/aiService';
 import ReactMarkdown from 'react-markdown';
-import { Sparkles, X, Send, Loader2, Play } from 'lucide-react';
+import remarkGfm from 'remark-gfm';
+import { Sparkles, X, Send, Loader2, Play, RotateCcw } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { sqlEngine } from '../lib/sqlEngine';
 import './CurriculumDetail.css';
+
+// ─── Interview Questions Data ───────────────────────────
+const interviewBank = {
+    default: [
+        { q: 'What is the difference between SQL and NoSQL?', a: 'SQL databases are relational (tables with fixed schemas) while NoSQL databases are non-relational (documents, key-value, graph) with flexible schemas. SQL uses ACID transactions; NoSQL often uses eventual consistency for scalability.' },
+        { q: 'Explain the difference between WHERE and HAVING.', a: 'WHERE filters individual rows before GROUP BY. HAVING filters groups after aggregation. HAVING can use aggregate functions like COUNT(), AVG(); WHERE cannot.' },
+        { q: 'What is a Primary Key vs a Unique Key?', a: 'Primary Key: unique + NOT NULL + only one per table. Unique Key: unique but allows NULLs + multiple per table.' },
+        { q: 'What is normalization? Name the first three normal forms.', a: '1NF: No repeating groups, atomic values. 2NF: 1NF + no partial dependencies. 3NF: 2NF + no transitive dependencies. Purpose: reduce redundancy.' },
+        { q: 'What happens if you run UPDATE without WHERE?', a: 'It updates EVERY row in the table. This is one of the most dangerous SQL mistakes in production.' },
+    ],
+    'level-0': [
+        { q: 'What is a database? How is it different from a spreadsheet?', a: 'A database is a structured collection of data managed by a DBMS. Unlike spreadsheets, databases support concurrent access, ACID transactions, indexing for fast queries, and can handle millions of rows efficiently.' },
+        { q: 'Name 3 popular relational databases and their use cases.', a: 'PostgreSQL (complex queries, analytics), MySQL (web apps, WordPress), SQLite (mobile apps, embedded systems). Oracle and SQL Server are also popular in enterprise.' },
+        { q: 'What does ACID stand for?', a: 'Atomicity (all or nothing), Consistency (data stays valid), Isolation (concurrent transactions don\'t interfere), Durability (committed data survives crashes).' },
+        { q: 'Explain structured vs unstructured data with examples.', a: 'Structured: employee records, financial transactions (fits in tables). Unstructured: images, videos, emails (no fixed schema). Semi-structured: JSON, XML (has some organization).' },
+        { q: 'When would you choose NoSQL over SQL?', a: 'When you need: flexible schemas (rapidly changing data models), horizontal scaling (massive distributed data), high write throughput (real-time logging), or document storage (content management).' },
+    ],
+    'level-1': [
+        { q: 'What is the execution order of a SQL query?', a: 'FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT. This is why you can\'t use a column alias in WHERE — SELECT hasn\'t run yet!' },
+        { q: 'What is the difference between INNER JOIN and LEFT JOIN?', a: 'INNER JOIN returns only matching rows from both tables. LEFT JOIN returns ALL rows from the left table plus matching rows from the right (NULLs for non-matches).' },
+        { q: 'Explain NULL in SQL. Why is NULL = NULL false?', a: 'NULL means "unknown value." Since two unknowns aren\'t necessarily equal, NULL = NULL evaluates to NULL (not TRUE). Use IS NULL to check for NULLs.' },
+        { q: 'What is the difference between DELETE, TRUNCATE, and DROP?', a: 'DELETE: removes specific rows (can use WHERE, logged, can rollback). TRUNCATE: removes all rows (faster, can\'t rollback in most DBs). DROP: removes the entire table structure.' },
+        { q: 'How do you paginate results in SQL?', a: 'Use LIMIT and OFFSET: SELECT * FROM users LIMIT 10 OFFSET 20; returns rows 21-30. For large datasets, prefer keyset pagination (WHERE id > last_id LIMIT 10).' },
+        { q: 'What is the difference between UNION and UNION ALL?', a: 'UNION removes duplicates (slower, sorts results). UNION ALL keeps all rows including duplicates (faster). Use UNION ALL when you know there won\'t be duplicates.' },
+    ],
+    'level-2': [
+        { q: 'What is a transaction? When would you use one?', a: 'A transaction groups multiple SQL statements into one atomic unit. Use BEGIN/COMMIT/ROLLBACK. Essential when transferring money (debit + credit must both succeed or both fail).' },
+        { q: 'Explain the difference between a clustered and non-clustered index.', a: 'Clustered index determines the physical order of data (one per table, usually the PK). Non-clustered index is a separate structure with pointers to data (multiple per table).' },
+        { q: 'What is a deadlock and how do you prevent it?', a: 'A deadlock occurs when two transactions wait for each other\'s locks. Prevent by: consistent lock ordering, short transactions, using timeouts, and avoiding unnecessary locks.' },
+        { q: 'Explain the concept of database denormalization.', a: 'Intentionally adding redundancy to improve read performance. Trade-off: faster reads but slower writes and risk of data inconsistency. Used in data warehouses and read-heavy systems.' },
+        { q: 'What are window functions? Give an example.', a: 'Functions that operate on a set of rows related to the current row without collapsing them. Example: SELECT name, salary, RANK() OVER (ORDER BY salary DESC) FROM employees;' },
+    ],
+};
 
 const TopicLesson = () => {
     const { levelId, moduleId, topicId } = useParams();
@@ -24,12 +58,11 @@ const TopicLesson = () => {
     const level = curriculumData.find((l) => l.id === levelId);
     const module = level?.modules.find((m) => m.id === moduleId);
 
-    // topicId format is 'topic-0', 'topic-1', etc.
     const tIdx = parseInt(topicId.split('-')[1]);
     const topicTitle = module?.topics[tIdx];
     const topicPathId = `${levelId}-${moduleId}-${tIdx}`;
     const [completed, setCompleted] = React.useState(isTopicComplete(topicPathId));
-    const [activeTab, setActiveTab] = React.useState('theory'); // theory, lab, interview, quiz
+    const [activeTab, setActiveTab] = React.useState('theory');
     const [isAiOpen, setIsAiOpen] = React.useState(false);
     const [aiInput, setAiInput] = React.useState('');
     const [chat, setChat] = React.useState([{ role: 'ai', msg: "Hi! I'm your SQL tutor. Ask me anything about this lesson!" }]);
@@ -37,6 +70,8 @@ const TopicLesson = () => {
     const [lessonQuery, setLessonQuery] = React.useState('SELECT * FROM products LIMIT 5;');
     const [lessonResults, setLessonResults] = React.useState(null);
     const [lessonError, setLessonError] = React.useState(null);
+    const [statusMsg, setStatusMsg] = React.useState('');
+    const [showAnswer, setShowAnswer] = React.useState({});
     const content = getLessonBody(topicPathId);
 
     const handleSend = async () => {
@@ -50,11 +85,52 @@ const TopicLesson = () => {
         setIsThinking(false);
     };
 
+    const handleRunLesson = async () => {
+        if (!lessonQuery.trim()) return;
+        try {
+            await sqlEngine.init();
+            sqlEngine.loadDataset('ecommerce');
+            const trimmed = lessonQuery.trim();
+            const isDDL = /^\s*(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE)/i.test(trimmed);
+
+            // Multi-statement support
+            const stmts = trimmed.split(';').filter(s => s.trim());
+            let lastRes = null;
+            let changes = 0;
+
+            stmts.forEach(s => {
+                const full = s.trim() + ';';
+                const res = sqlEngine.execute(full);
+                if (res && res.columns && res.columns.length > 0) lastRes = res;
+                if (/^\s*(INSERT|UPDATE|DELETE)/i.test(full)) {
+                    try {
+                        const c = sqlEngine.db.exec("SELECT changes();");
+                        if (c.length > 0) changes += c[0].values[0][0];
+                    } catch (e) { /* ignore */ }
+                }
+            });
+
+            if (lastRes && lastRes.columns.length > 0) {
+                setLessonResults(lastRes);
+                setStatusMsg(`${lastRes.values.length} row(s)`);
+            } else {
+                setLessonResults({ columns: ['Status'], values: [['✓ Executed successfully']] });
+                setStatusMsg(changes > 0 ? `${changes} row(s) affected` : 'Done');
+            }
+            setLessonError(null);
+        } catch (err) {
+            setLessonError(err.message);
+            setLessonResults(null);
+            setStatusMsg('');
+        }
+    };
+
     if (!topicTitle) {
         return <div className="page-container"><h2>Topic Not Found</h2></div>;
     }
 
     const isNextTopic = tIdx < module.topics.length - 1;
+    const questions = interviewBank[levelId] || interviewBank.default;
 
     return (
         <div className="topic-lesson-container animate-fade-in" style={{ paddingBottom: '5rem' }}>
@@ -67,28 +143,16 @@ const TopicLesson = () => {
             <div className="lesson-grid">
                 <div className="lesson-content glass-panel">
                     <div className="lesson-tabs flex gap-4 mb-6 border-b border-subtle">
-                        <button
-                            className={`lesson-tab-btn ${activeTab === 'theory' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('theory')}
-                        >
+                        <button className={`lesson-tab-btn ${activeTab === 'theory' ? 'active' : ''}`} onClick={() => setActiveTab('theory')}>
                             <BookOpen size={16} /> Theory
                         </button>
-                        <button
-                            className={`lesson-tab-btn ${activeTab === 'lab' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('lab')}
-                        >
+                        <button className={`lesson-tab-btn ${activeTab === 'lab' ? 'active' : ''}`} onClick={() => setActiveTab('lab')}>
                             <Microscope size={16} /> Hands-on Lab
                         </button>
-                        <button
-                            className={`lesson-tab-btn ${activeTab === 'interview' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('interview')}
-                        >
+                        <button className={`lesson-tab-btn ${activeTab === 'interview' ? 'active' : ''}`} onClick={() => setActiveTab('interview')}>
                             <MessageSquare size={16} /> Interview Questions
                         </button>
-                        <button
-                            className={`lesson-tab-btn ${activeTab === 'quiz' ? 'active' : ''}`}
-                            onClick={() => setActiveTab('quiz')}
-                        >
+                        <button className={`lesson-tab-btn ${activeTab === 'quiz' ? 'active' : ''}`} onClick={() => setActiveTab('quiz')}>
                             <HelpCircle size={16} /> Quiz
                         </button>
                     </div>
@@ -98,7 +162,7 @@ const TopicLesson = () => {
                     <div className="tab-content animate-fade-in">
                         {activeTab === 'theory' && (
                             <div className="markdown-content">
-                                <ReactMarkdown>
+                                <ReactMarkdown remarkPlugins={[remarkGfm]}>
                                     {content.theory}
                                 </ReactMarkdown>
                             </div>
@@ -116,22 +180,37 @@ const TopicLesson = () => {
                                     {content.lab.tasks.map((t, i) => <li key={i}>{t}</li>)}
                                 </ul>
                                 <div className="callout-box warning">
-                                    <strong>Lab Mission:</strong> Complete the tasks using the interactive editor.
+                                    <strong>Lab Mission:</strong> Complete the tasks using the interactive editor on the right.
                                 </div>
                             </div>
                         )}
 
                         {activeTab === 'interview' && (
                             <div className="markdown-content">
-                                <p>Be prepared for your next technical interview with these target questions:</p>
-                                <div className="interview-q">
-                                    <strong>Q1: How would you explain {topicTitle} to a non-technical stakeholder?</strong>
-                                    <p className="ans-hint">Hint: Focus on the business value of structured data access.</p>
-                                </div>
-                                <div className="interview-q">
-                                    <strong>Q2: What are the performance trade-offs associated with {topicTitle}?</strong>
-                                    <p className="ans-hint">Hint: Mention index usage and CPU vs I/O balance.</p>
-                                </div>
+                                <p style={{ marginBottom: '2rem', fontSize: '1.05rem' }}>
+                                    Practice these real interview questions. Click "Show Answer" to reveal the model answer.
+                                </p>
+                                {questions.map((item, i) => (
+                                    <div key={i} className="interview-q" style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
+                                        <strong style={{ fontSize: '1rem', lineHeight: 1.5 }}>Q{i + 1}: {item.q}</strong>
+                                        <div style={{ marginTop: '0.75rem' }}>
+                                            {showAnswer[i] ? (
+                                                <div className="ans-hint animate-fade-in" style={{ background: 'rgba(16,185,129,0.08)', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid var(--accent-green)' }}>
+                                                    <strong style={{ color: 'var(--accent-green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Model Answer:</strong>
+                                                    <p style={{ marginTop: '0.5rem', lineHeight: 1.6, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{item.a}</p>
+                                                </div>
+                                            ) : (
+                                                <button
+                                                    className="secondary-btn sm-btn"
+                                                    onClick={() => setShowAnswer(prev => ({ ...prev, [i]: true }))}
+                                                    style={{ marginTop: '0.25rem' }}
+                                                >
+                                                    Show Answer
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                ))}
                             </div>
                         )}
 
@@ -176,102 +255,75 @@ const TopicLesson = () => {
                         )}
                     </div>
                 </div>
+
+                {/* ─── Right Side: Interactive Practice ─── */}
                 <div className="lesson-editor-side">
-                    {/* Interactive Practice */}
                     <div className="mini-editor-wrapper glass-panel">
                         <div className="editor-header flex justify-between items-center p-2 px-4 border-b border-subtle">
                             <span className="editor-title flex items-center gap-2"><Terminal size={14} /> Interactive Practice</span>
-                            <div className="flex gap-2">
-                                <button
-                                    className="primary-btn sm-btn"
-                                    onClick={async () => {
-                                        try {
-                                            await sqlEngine.init();
-                                            sqlEngine.loadDataset('ecommerce');
-                                            const res = sqlEngine.execute(lessonQuery);
-                                            setLessonResults(res);
-                                            setLessonError(null);
-                                        } catch (err) {
-                                            setLessonError(err.message);
-                                            setLessonResults(null);
-                                        }
-                                    }}
-                                >
+                            <div className="flex gap-2 items-center">
+                                {statusMsg && <span style={{ fontSize: '0.7rem', color: 'var(--accent-green)', fontWeight: 600 }}>{statusMsg}</span>}
+                                <button className="secondary-btn sm-btn" onClick={() => { setLessonQuery(''); setLessonResults(null); setLessonError(null); setStatusMsg(''); }} style={{ padding: '4px 8px' }}>
+                                    <RotateCcw size={10} />
+                                </button>
+                                <button className="primary-btn sm-btn" onClick={handleRunLesson}>
                                     <Play size={10} fill="white" /> Run
                                 </button>
                             </div>
                         </div>
-                        <div style={{ height: '220px', borderBottom: '1px solid var(--border-subtle)' }}>
+                        <div style={{ height: '240px', borderBottom: '1px solid var(--border-subtle)' }}>
                             <CodeMirror
                                 value={lessonQuery}
-                                height="220px"
+                                height="240px"
                                 extensions={[sql()]}
                                 theme="dark"
                                 onChange={(val) => setLessonQuery(val)}
-                                basicSetup={{
-                                    lineNumbers: true,
-                                    autocompletion: true,
-                                    bracketMatching: true
-                                }}
+                                basicSetup={{ lineNumbers: true, autocompletion: true, bracketMatching: true }}
                             />
                         </div>
-                        <div className="mini-results overflow-auto text-xs" style={{ maxHeight: '250px', minHeight: '100px' }}>
+                        <div className="mini-results overflow-auto text-xs" style={{ maxHeight: '300px', minHeight: '80px' }}>
                             {lessonError ? (
-                                <div className="text-accent-red p-3">{lessonError}</div>
+                                <div style={{ color: 'var(--accent-red)', padding: '0.75rem', whiteSpace: 'pre-wrap' }}>{lessonError}</div>
                             ) : lessonResults ? (
                                 <table className="results-table mini">
-                                    <thead>
-                                        <tr>{lessonResults.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
-                                    </thead>
+                                    <thead><tr>{lessonResults.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
                                     <tbody>
-                                        {lessonResults.values.slice(0, 5).map((row, i) => (
-                                            <tr key={i}>{row.map((v, j) => <td key={j}>{v?.toString()}</td>)}</tr>
+                                        {lessonResults.values.slice(0, 10).map((row, i) => (
+                                            <tr key={i}>{row.map((v, j) => <td key={j}>{v !== null && v !== undefined ? v.toString() : <em style={{ opacity: 0.4 }}>NULL</em>}</td>)}</tr>
                                         ))}
                                     </tbody>
                                 </table>
                             ) : (
-                                <div className="text-muted p-3">Results will appear here...</div>
+                                <div className="text-muted" style={{ padding: '1rem', textAlign: 'center' }}>Run a query to see results</div>
                             )}
                         </div>
                     </div>
 
-                    <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                    <div style={{ marginTop: '0.75rem', textAlign: 'center' }}>
                         <Link to="/editor" className="secondary-btn sm-btn">Open Full Playground</Link>
                     </div>
 
-                    {/* AI Assistant — inline, no overlap */}
-                    <div className="ai-inline-panel glass-panel" style={{ marginTop: '1rem' }}>
-                        <div
-                            className="ai-toggle-bar flex justify-between items-center p-3 px-4 cursor-pointer"
+                    {/* AI Assistant */}
+                    <div className="ai-inline-panel glass-panel" style={{ marginTop: '0.75rem' }}>
+                        <div className="ai-toggle-bar flex justify-between items-center p-3 px-4 cursor-pointer"
                             onClick={() => setIsAiOpen(!isAiOpen)}
-                            style={{ borderBottom: isAiOpen ? '1px solid var(--border-subtle)' : 'none' }}
-                        >
+                            style={{ borderBottom: isAiOpen ? '1px solid var(--border-subtle)' : 'none' }}>
                             <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
                                 <Sparkles size={16} /> AI SQL Assistant
                             </span>
                             <span className="text-muted text-xs">{isAiOpen ? 'Collapse' : 'Expand'}</span>
                         </div>
-
                         {isAiOpen && (
                             <div className="ai-panel-body animate-fade-in" style={{ padding: '1rem' }}>
-                                <div className="ai-chat-messages" style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                                <div className="ai-chat-messages" style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
                                     {chat.map((c, i) => (
-                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm ${c.role === 'user' ? 'user-msg' : ''}`}>
-                                            {c.msg}
-                                        </div>
+                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm ${c.role === 'user' ? 'user-msg' : ''}`}>{c.msg}</div>
                                     ))}
                                     {isThinking && <Loader2 className="animate-spin text-accent-cyan mx-auto" size={16} />}
                                 </div>
                                 <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Ask about this topic..."
-                                        className="dataset-select"
-                                        style={{ flex: 1 }}
-                                        value={aiInput}
-                                        onChange={e => setAiInput(e.target.value)}
-                                        onKeyPress={e => e.key === 'Enter' && handleSend()}
-                                    />
+                                    <input type="text" placeholder="Ask about this topic..." className="dataset-select" style={{ flex: 1 }}
+                                        value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} />
                                     <button className="primary-btn sm-btn" onClick={handleSend}><Send size={14} /></button>
                                 </div>
                             </div>

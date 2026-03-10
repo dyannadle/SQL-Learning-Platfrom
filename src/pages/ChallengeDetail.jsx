@@ -3,6 +3,8 @@ import { useParams, Link } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { ArrowLeft, Play, LayoutList, CheckCircle, XCircle } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { challenges } from '../data/challenges';
 import { sqlEngine } from '../lib/sqlEngine';
 import './Challenges.css';
@@ -16,12 +18,6 @@ const ChallengeDetail = () => {
     const [status, setStatus] = useState('idle'); // idle, running, pass, fail
     const [showHints, setShowHints] = useState(false);
     const [aiFeedback, setAiFeedback] = useState('');
-
-    const customTheme = {
-        "&": { backgroundColor: "transparent", color: "#e2e8f0", height: "100%" },
-        ".cm-content": { fontFamily: "var(--font-code)", fontSize: "15px" },
-        ".cm-gutters": { backgroundColor: "transparent", border: "none", color: "#64748b" }
-    };
 
     useEffect(() => {
         const setupEnv = async () => {
@@ -116,7 +112,9 @@ const ChallengeDetail = () => {
 
                     <div className="prompt-body">
                         <div className="markdown-content text-secondary leading-relaxed">
-                            {challenge.description}
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {challenge.description}
+                            </ReactMarkdown>
                         </div>
 
                         {challenge.hints && (
@@ -156,7 +154,7 @@ const ChallengeDetail = () => {
                                 height="100%"
                                 extensions={[sql()]}
                                 onChange={(val) => setQuery(val)}
-                                theme={customTheme}
+                                theme="dark"
                                 basicSetup={{ lineNumbers: true, highlightActiveLineGutter: true }}
                             />
                         </div>

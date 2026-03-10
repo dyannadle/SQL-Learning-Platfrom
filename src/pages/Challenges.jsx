@@ -1,13 +1,16 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { challenges, challengeCategories } from '../data/challenges';
-import { Search, Filter, CheckCircle, Code } from 'lucide-react';
+import { Search, Filter, Code } from 'lucide-react';
 import './Challenges.css';
+
+const PAGE_SIZE = 30;
 
 const Challenges = () => {
     const [search, setSearch] = React.useState('');
     const [difficulty, setDifficulty] = React.useState('All');
     const [category, setCategory] = React.useState('All');
+    const [visibleCount, setVisibleCount] = React.useState(PAGE_SIZE);
 
     const filteredChallenges = challenges.filter(c => {
         const matchesSearch = c.title.toLowerCase().includes(search.toLowerCase());
@@ -16,11 +19,15 @@ const Challenges = () => {
         return matchesSearch && matchesDifficulty && matchesCategory;
     });
 
+    const shown = filteredChallenges.slice(0, visibleCount);
+
+    React.useEffect(() => { setVisibleCount(PAGE_SIZE); }, [search, difficulty, category]);
+
     return (
         <div className="challenges-container animate-fade-in">
             <div className="challenges-header text-center">
                 <h1 className="page-title">SQL <span className="gradient-text">Challenges</span></h1>
-                <p className="page-subtitle">Master technical interviews with problems from Amazon, Google, and more.</p>
+                <p className="page-subtitle">{challenges.length}+ problems across {challengeCategories.length} categories — beginner to expert.</p>
             </div>
 
             <div className="category-scroll-container mb-6 overflow-auto">
@@ -28,14 +35,14 @@ const Challenges = () => {
                     <button
                         className={`category-chip ${category === 'All' ? 'active' : ''}`}
                         onClick={() => setCategory('All')}
-                    >All Categories</button>
+                    >All ({challenges.length})</button>
                     {challengeCategories.map(cat => (
                         <button
                             key={cat.id}
                             className={`category-chip ${category === cat.id ? 'active' : ''}`}
                             onClick={() => setCategory(cat.id)}
                         >
-                            {cat.title}
+                            {cat.icon} {cat.title} ({cat.count})
                         </button>
                     ))}
                 </div>
@@ -53,10 +60,7 @@ const Challenges = () => {
                     />
                 </div>
                 <div className="filter-controls flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                        <Filter size={18} className="text-muted" />
-                        <span className="text-muted text-sm">Sort By:</span>
-                    </div>
+                    <Filter size={18} className="text-muted" />
                     <select
                         className="dataset-select"
                         value={difficulty}
@@ -67,13 +71,15 @@ const Challenges = () => {
                         <option value="Easy">Easy</option>
                         <option value="Medium">Medium</option>
                         <option value="Hard">Hard</option>
+                        <option value="Expert">Expert</option>
                     </select>
+                    <span className="text-muted text-sm">{filteredChallenges.length} results</span>
                 </div>
             </div>
 
             <div className="challenges-list">
-                {filteredChallenges.length > 0 ? filteredChallenges.map((chal, idx) => (
-                    <Link key={chal.id} to={`/challenges/${chal.id}`} className="challenge-item glass-panel animate-slide-up" style={{ animationDelay: `${idx * 0.05}s` }}>
+                {shown.length > 0 ? shown.map((chal, idx) => (
+                    <Link key={chal.id} to={`/challenges/${chal.id}`} className="challenge-item glass-panel animate-slide-up" style={{ animationDelay: `${Math.min(idx, 10) * 0.03}s` }}>
                         <div className="chal-info flex items-center gap-4">
                             <div className="chal-status pending"><Code size={20} /></div>
                             <div>
@@ -82,7 +88,7 @@ const Challenges = () => {
                                     {chal.company && <span className="company-badge">{chal.company}</span>}
                                 </div>
                                 <div className="chal-tags gap-2 flex">
-                                    {chal.tags.map(tag => <span key={tag} className="tag-pill">{tag}</span>)}
+                                    {chal.tags.slice(0, 3).map(tag => <span key={tag} className="tag-pill">{tag}</span>)}
                                 </div>
                             </div>
                         </div>
@@ -94,8 +100,16 @@ const Challenges = () => {
                 )) : (
                     <div className="text-center p-12 text-muted">No problems found for this filter.</div>
                 )}
-            </div >
-        </div >
+            </div>
+
+            {visibleCount < filteredChallenges.length && (
+                <div style={{ textAlign: 'center', margin: '2rem 0' }}>
+                    <button className="secondary-btn" onClick={() => setVisibleCount(prev => prev + PAGE_SIZE)}>
+                        Load More ({filteredChallenges.length - visibleCount} remaining)
+                    </button>
+                </div>
+            )}
+        </div>
     );
 };
 
