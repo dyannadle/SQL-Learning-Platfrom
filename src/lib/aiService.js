@@ -20,7 +20,7 @@ export const getAiResponse = async (query) => {
     // Check for keywords
     for (const [key, value] of Object.entries(KNOWLEDGE_BASE)) {
         if (q.includes(key)) {
-            return `Tutor: \${value} Would you like to see a code example?`;
+            return `Tutor: ${value} Would you like to see a code example?`;
         }
     }
 

@@ -31,11 +31,9 @@ const QuizComponent = ({ question, options, correctAnswer, explanation }) => {
                 {options.map((option, idx) => (
                     <button
                         key={idx}
-                        className={`quiz-option-btn \${selected === idx ? 'selected' : ''} \${
-                            isSubmitted && idx === correctAnswer ? 'correct' : ''
-                        } \${
-                            isSubmitted && selected === idx && idx !== correctAnswer ? 'incorrect' : ''
-                        }`}
+                        className={`quiz-option-btn ${selected === idx ? 'selected' : ''} ${isSubmitted && idx === correctAnswer ? 'correct' : ''
+                            } ${isSubmitted && selected === idx && idx !== correctAnswer ? 'incorrect' : ''
+                            }`}
                         onClick={() => handleSelect(idx)}
                         disabled={isSubmitted}
                     >
@@ -66,7 +64,7 @@ const QuizComponent = ({ question, options, correctAnswer, explanation }) => {
             </div>
 
             {isSubmitted && (
-                <div className={`quiz-feedback mt-6 p-4 rounded-lg \${isCorrect ? 'bg-green-900/20' : 'bg-red-900/20'} animate-fade-in`}>
+                <div className={`quiz-feedback mt-6 p-4 rounded-lg ${isCorrect ? 'bg-green-900/20' : 'bg-red-900/20'} animate-fade-in`}>
                     <p className="font-bold mb-1">
                         {isCorrect ? '✅ Correct!' : '❌ Incorrect'}
                     </p>

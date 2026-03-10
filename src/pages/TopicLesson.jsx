@@ -10,7 +10,11 @@ import QuizComponent from '../components/Quiz/QuizComponent';
 import { notifyAchievement } from '../components/NotificationToast';
 import { getLessonBody } from '../data/lessonContent';
 import { getAiResponse } from '../lib/aiService';
-import { Sparkles, X, Send, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
+import { Sparkles, X, Send, Loader2, Play } from 'lucide-react';
+import CodeMirror from '@uiw/react-codemirror';
+import { sql } from '@codemirror/lang-sql';
+import { sqlEngine } from '../lib/sqlEngine';
 import './CurriculumDetail.css';
 
 const TopicLesson = () => {
@@ -22,13 +26,16 @@ const TopicLesson = () => {
     // topicId format is 'topic-0', 'topic-1', etc.
     const tIdx = parseInt(topicId.split('-')[1]);
     const topicTitle = module?.topics[tIdx];
-    const topicPathId = `\${levelId}-\${moduleId}-\${tIdx}`;
+    const topicPathId = `${levelId}-${moduleId}-${tIdx}`;
     const [completed, setCompleted] = React.useState(isTopicComplete(topicPathId));
     const [activeTab, setActiveTab] = React.useState('theory'); // theory, lab, interview, quiz
     const [isAiOpen, setIsAiOpen] = React.useState(false);
     const [aiInput, setAiInput] = React.useState('');
     const [chat, setChat] = React.useState([{ role: 'ai', msg: "Hi! I'm your SQL tutor. Ask me anything about this lesson!" }]);
     const [isThinking, setIsThinking] = React.useState(false);
+    const [lessonQuery, setLessonQuery] = React.useState('SELECT * FROM products LIMIT 5;');
+    const [lessonResults, setLessonResults] = React.useState(null);
+    const [lessonError, setLessonError] = React.useState(null);
     const content = getLessonBody(topicPathId);
 
     const handleSend = async () => {
@@ -60,25 +67,25 @@ const TopicLesson = () => {
                 <div className="lesson-content glass-panel">
                     <div className="lesson-tabs flex gap-4 mb-6 border-b border-subtle">
                         <button
-                            className={`lesson-tab-btn \${activeTab === 'theory' ? 'active' : ''}`}
+                            className={`lesson-tab-btn ${activeTab === 'theory' ? 'active' : ''}`}
                             onClick={() => setActiveTab('theory')}
                         >
                             <BookOpen size={16} /> Theory
                         </button>
                         <button
-                            className={`lesson-tab-btn \${activeTab === 'lab' ? 'active' : ''}`}
+                            className={`lesson-tab-btn ${activeTab === 'lab' ? 'active' : ''}`}
                             onClick={() => setActiveTab('lab')}
                         >
                             <Microscope size={16} /> Hands-on Lab
                         </button>
                         <button
-                            className={`lesson-tab-btn \${activeTab === 'interview' ? 'active' : ''}`}
+                            className={`lesson-tab-btn ${activeTab === 'interview' ? 'active' : ''}`}
                             onClick={() => setActiveTab('interview')}
                         >
                             <MessageSquare size={16} /> Interview Questions
                         </button>
                         <button
-                            className={`lesson-tab-btn \${activeTab === 'quiz' ? 'active' : ''}`}
+                            className={`lesson-tab-btn ${activeTab === 'quiz' ? 'active' : ''}`}
                             onClick={() => setActiveTab('quiz')}
                         >
                             <HelpCircle size={16} /> Quiz
@@ -90,7 +97,9 @@ const TopicLesson = () => {
                     <div className="tab-content animate-fade-in">
                         {activeTab === 'theory' && (
                             <div className="markdown-content">
-                                <div dangerouslySetInnerHTML={{ __html: content.theory.replace(/\n/g, '<br/>') }} />
+                                <ReactMarkdown>
+                                    {content.theory}
+                                </ReactMarkdown>
                             </div>
                         )}
 
@@ -128,14 +137,14 @@ const TopicLesson = () => {
                             <div className="markdown-content">
                                 <p>Test your knowledge before moving on:</p>
                                 <QuizComponent
-                                    question={`Which of the following is true about \${topicTitle}?`}
+                                    question={`Which of the following is true about ${topicTitle}?`}
                                     options={[
                                         'It is a fundamental part of relational modeling',
                                         'It should only be used in NoSQL databases',
                                         'It has been deprecated in modern SQL'
                                     ]}
                                     correctAnswer={0}
-                                    explanation={`\${topicTitle} remains a core principle in SQL for managing complex data relationships and performance.`}
+                                    explanation={`${topicTitle} remains a core principle in SQL for managing complex data relationships and performance.`}
                                 />
                             </div>
                         )}
@@ -143,29 +152,28 @@ const TopicLesson = () => {
 
                     <div className="lesson-actions" style={{ marginTop: '3rem', paddingTop: '2rem', borderTop: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between' }}>
                         <button
-                            className={`secondary-btn \${completed ? 'completed' : ''}`}
+                            className={`secondary-btn ${completed ? 'completed' : ''}`}
                             onClick={() => {
                                 if (!completed) {
                                     markTopicComplete(topicPathId);
                                     setCompleted(true);
-                                    notifyAchievement('Topic Mastered!', `You've completed \${topicTitle}. +20 XP`, 'badge');
+                                    notifyAchievement('Topic Mastered!', `You've completed ${topicTitle}. +20 XP`, 'badge');
                                 }
                             }}
                         >
                             <Check size={18} /> {completed ? 'Completed' : 'Mark Complete'}
                         </button>
                         {isNextTopic ? (
-                            <Link to={`/curriculum/\${levelId}/\${moduleId}/topic-\${tIdx + 1}`} className="primary-btn">
+                            <Link to={`/curriculum/${levelId}/${moduleId}/topic-${tIdx + 1}`} className="primary-btn">
                                 Next Topic
                             </Link>
                         ) : (
-                            <Link to={`/curriculum/\${levelId}`} className="primary-btn">
+                            <Link to={`/curriculum/${levelId}`} className="primary-btn">
                                 Finish Module
                             </Link>
                         )}
                     </div>
                 </div>
-
                 <div className="lesson-editor-side">
                     <div className="ai-assistant-toggle" onClick={() => setIsAiOpen(true)}>
                         <Sparkles size={16} /> AI SQL Assistant
@@ -181,7 +189,7 @@ const TopicLesson = () => {
                                 <p className="text-sm text-muted mb-4">Ask me to generate a query or explain this lesson!</p>
                                 <div className="ai-chat flex flex-col gap-4 flex-1 overflow-auto">
                                     {chat.map((c, i) => (
-                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm \${c.role === 'user' ? 'user-msg' : ''}`}>
+                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm ${c.role === 'user' ? 'user-msg' : ''}`}>
                                             {c.msg}
                                         </div>
                                     ))}
@@ -203,15 +211,65 @@ const TopicLesson = () => {
                     )}
 
                     <div className="mini-editor-wrapper glass-panel">
-                        <div className="editor-header">
-                            <span className="editor-title"><Terminal size={14} /> Interactive Practice</span>
-                        </div>
-                        <div className="mini-editor-body">
-                            <div className="placeholder-editor">
-                                <p>CodeMirror SQL Sandbox loads here</p>
-                                <Link to="/editor" className="secondary-btn" style={{ marginTop: '1rem' }}>Open Full Editor</Link>
+                        <div className="editor-header flex justify-between items-center p-2 px-4 border-b border-subtle">
+                            <span className="editor-title flex items-center gap-2"><Terminal size={14} /> Interactive Practice</span>
+                            <div className="flex gap-2">
+                                <button
+                                    className="primary-btn sm-btn"
+                                    onClick={async () => {
+                                        try {
+                                            await sqlEngine.init();
+                                            sqlEngine.loadDataset('ecommerce');
+                                            const res = sqlEngine.execute(lessonQuery);
+                                            setLessonResults(res);
+                                            setLessonError(null);
+                                        } catch (err) {
+                                            setLessonError(err.message);
+                                            setLessonResults(null);
+                                        }
+                                    }}
+                                >
+                                    <Play size={10} fill="white" /> Run
+                                </button>
                             </div>
                         </div>
+                        <div className="mini-editor-body" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
+                            <div style={{ flex: 1, borderBottom: '1px solid var(--border-subtle)' }}>
+                                <CodeMirror
+                                    value={lessonQuery}
+                                    height="100%"
+                                    extensions={[sql()]}
+                                    theme="dark"
+                                    onChange={(val) => setLessonQuery(val)}
+                                    basicSetup={{
+                                        lineNumbers: true,
+                                        autocompletion: true,
+                                        bracketMatching: true
+                                    }}
+                                />
+                            </div>
+                            <div className="mini-results p-2 overflow-auto text-xs bg-navy-light" style={{ height: '120px' }}>
+                                {lessonError ? (
+                                    <div className="text-accent-red p-2">{lessonError}</div>
+                                ) : lessonResults ? (
+                                    <table className="results-table mini">
+                                        <thead>
+                                            <tr>{lessonResults.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+                                        </thead>
+                                        <tbody>
+                                            {lessonResults.values.slice(0, 5).map((row, i) => (
+                                                <tr key={i}>{row.map((v, j) => <td key={j}>{v?.toString()}</td>)}</tr>
+                                            ))}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <div className="text-muted p-2">Results will appear here...</div>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ marginTop: '1rem', textAlign: 'center' }}>
+                        <Link to="/editor" className="secondary-btn sm-btn">Open Full Playground</Link>
                     </div>
                 </div>
             </div>

@@ -1,5 +1,8 @@
 export const datasets = {
-    employees: `
+  employees: `
+    DROP TABLE IF EXISTS employees;
+    DROP TABLE IF EXISTS departments;
+
     CREATE TABLE departments (
       id INTEGER PRIMARY KEY,
       name TEXT NOT NULL
@@ -34,7 +37,10 @@ export const datasets = {
       (9, 'William', 'Thomas', 'william.t@company.com', '2019-12-01', 88000, 1),
       (10, 'Ashley', 'Jackson', 'ashley.j@company.com', '2023-01-05', 55000, 2);
   `,
-    ecommerce: `
+  ecommerce: `
+    DROP TABLE IF EXISTS orders;
+    DROP TABLE IF EXISTS products;
+
     CREATE TABLE products (
       id INTEGER PRIMARY KEY,
       name TEXT,
