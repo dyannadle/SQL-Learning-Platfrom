@@ -1,0 +1,36 @@
+.database-designer {
+    width: 100%;
+}
+
+.designer-canvas {
+    background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+    background-size: 30px 30px;
+}
+
+.designer-table {
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    z-index: 10;
+}
+
+.table-header {
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
+}
+
+.table-columns {
+    background: rgba(10, 14, 39, 0.8);
+    border-bottom-left-radius: 8px;
+    border-bottom-right-radius: 8px;
+}
+
+.designer-table:hover {
+    border-color: var(--accent-cyan);
+    box-shadow: 0 0 20px rgba(34, 211, 238, 0.2);
+}
+
+.cursor-move {
+    cursor: move;
+}

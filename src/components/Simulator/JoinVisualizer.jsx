@@ -42,9 +42,10 @@ const JoinVisualizer = () => {
     };
 
     const nextStep = () => {
+        const totalStepsNested = leftTable.length * rightTable.length;
+
         if (algo === 'nested') {
-            const totalSteps = leftTable.length * rightTable.length;
-            if (step >= totalSteps) {
+            if (step >= totalStepsNested) {
                 setIsPlaying(false);
                 return;
             }
@@ -59,6 +60,34 @@ const JoinVisualizer = () => {
                 setResults(prev => [...prev, { ...leftTable[lIdx], ...rightTable[rIdx] }]);
             }
 
+            setStep(prev => prev + 1);
+        } else if (algo === 'hash') {
+            // Hash Join Simulation
+            // Step 0-2: Build Hash Map (Scan Table B)
+            // Step 3-5: Probe Table A
+            const totalStepsHash = leftTable.length + rightTable.length;
+
+            if (step >= totalStepsHash) {
+                setIsPlaying(false);
+                return;
+            }
+
+            if (step < rightTable.length) {
+                // Build phase (Scanning Table B/Inner)
+                setRightPointer(step);
+                setLeftPointer(-1);
+            } else {
+                // Probe phase (Scanning Table A/Outer)
+                const probeIdx = step - rightTable.length;
+                setLeftPointer(probeIdx);
+                setRightPointer(-1);
+
+                // Simulation: if match exists in Table B
+                const match = rightTable.find(r => r.userId === leftTable[probeIdx].id);
+                if (match) {
+                    setResults(prev => [...prev, { ...leftTable[probeIdx], ...match }]);
+                }
+            }
             setStep(prev => prev + 1);
         }
     };
@@ -77,7 +106,7 @@ const JoinVisualizer = () => {
                         onChange={(e) => { setAlgo(e.target.value); reset(); }}
                     >
                         <option value="nested">Nested Loop Join</option>
-                        <option value="hash">Hash Join (Coming Soon)</option>
+                        <option value="hash">Hash Join</option>
                     </select>
                     <button className="primary-btn flex items-center gap-2" onClick={() => setIsPlaying(!isPlaying)}>
                         {isPlaying ? <Pause size={16} /> : <Play size={16} />}
@@ -150,7 +179,9 @@ const JoinVisualizer = () => {
 
             <div className="mt-6 p-4 bg-muted-subtle rounded-lg border border-subtle">
                 <p className="text-sm font-code">
-                    <strong>Step {step}:</strong> {algo === 'nested' ? `Comparing Table A ID ${leftTable[Math.floor(step / rightTable.length)]?.id || '-'} with Table B UserID ${rightTable[step % rightTable.length]?.userId || '-'}` : 'Hashing Table A...'}
+                    <strong>Step {step}:</strong> {algo === 'nested' ?
+                        `Comparing Table A ID ${leftTable[Math.floor(step / rightTable.length)]?.id || '-'} with Table B UserID ${rightTable[step % rightTable.length]?.userId || '-'}` :
+                        (step < rightTable.length ? `[BUILD] Hashing Table B: Row ${step + 1}` : `[PROBE] Scanning Table A: Row ${step - rightTable.length + 1}`)}
                 </p>
             </div>
         </div>

@@ -6,6 +6,7 @@ import { markTopicComplete, isTopicComplete } from '../lib/progress';
 import JoinVisualizer from '../components/Simulator/JoinVisualizer';
 import IndexVisualizer from '../components/Simulator/IndexVisualizer';
 import VisualQueryBuilder from '../components/Simulator/VisualQueryBuilder';
+import DatabaseDesigner from '../components/Simulator/DatabaseDesigner';
 import QuizComponent from '../components/Quiz/QuizComponent';
 import { notifyAchievement } from '../components/NotificationToast';
 import { getLessonBody } from '../data/lessonContent';
@@ -108,6 +109,7 @@ const TopicLesson = () => {
                                 {levelId === 'level-4' && <JoinVisualizer />}
                                 {levelId === 'level-8' && <IndexVisualizer />}
                                 {levelId === 'level-1' && <VisualQueryBuilder />}
+                                {levelId === 'level-7' && <DatabaseDesigner />}
 
                                 <p className="mt-6">{content.lab.mission}</p>
                                 <ul className="lab-tasks">
@@ -175,41 +177,7 @@ const TopicLesson = () => {
                     </div>
                 </div>
                 <div className="lesson-editor-side">
-                    <div className="ai-assistant-toggle" onClick={() => setIsAiOpen(true)}>
-                        <Sparkles size={16} /> AI SQL Assistant
-                    </div>
-
-                    {isAiOpen && (
-                        <div className="ai-sidebar glass-panel animate-slide-in-right">
-                            <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
-                                <span className="flex items-center gap-2 font-bold"><Sparkles size={16} className="text-accent-cyan" /> SQL Assistant</span>
-                                <X size={18} className="cursor-pointer" onClick={() => setIsAiOpen(false)} />
-                            </div>
-                            <div className="ai-body p-4 flex flex-col h-full overflow-hidden">
-                                <p className="text-sm text-muted mb-4">Ask me to generate a query or explain this lesson!</p>
-                                <div className="ai-chat flex flex-col gap-4 flex-1 overflow-auto">
-                                    {chat.map((c, i) => (
-                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm ${c.role === 'user' ? 'user-msg' : ''}`}>
-                                            {c.msg}
-                                        </div>
-                                    ))}
-                                    {isThinking && <Loader2 className="animate-spin text-accent-cyan mx-auto" size={16} />}
-                                </div>
-                                <div className="ai-input-container mt-4 pt-4 border-t border-subtle flex gap-2">
-                                    <input
-                                        type="text"
-                                        placeholder="Ask tutoring..."
-                                        className="dataset-select w-full"
-                                        value={aiInput}
-                                        onChange={e => setAiInput(e.target.value)}
-                                        onKeyPress={e => e.key === 'Enter' && handleSend()}
-                                    />
-                                    <button className="primary-btn sm-btn" onClick={handleSend}><Send size={14} /></button>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
+                    {/* Interactive Practice */}
                     <div className="mini-editor-wrapper glass-panel">
                         <div className="editor-header flex justify-between items-center p-2 px-4 border-b border-subtle">
                             <span className="editor-title flex items-center gap-2"><Terminal size={14} /> Interactive Practice</span>
@@ -233,43 +201,81 @@ const TopicLesson = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="mini-editor-body" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ flex: 1, borderBottom: '1px solid var(--border-subtle)' }}>
-                                <CodeMirror
-                                    value={lessonQuery}
-                                    height="100%"
-                                    extensions={[sql()]}
-                                    theme="dark"
-                                    onChange={(val) => setLessonQuery(val)}
-                                    basicSetup={{
-                                        lineNumbers: true,
-                                        autocompletion: true,
-                                        bracketMatching: true
-                                    }}
-                                />
-                            </div>
-                            <div className="mini-results p-2 overflow-auto text-xs bg-navy-light" style={{ height: '120px' }}>
-                                {lessonError ? (
-                                    <div className="text-accent-red p-2">{lessonError}</div>
-                                ) : lessonResults ? (
-                                    <table className="results-table mini">
-                                        <thead>
-                                            <tr>{lessonResults.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
-                                        </thead>
-                                        <tbody>
-                                            {lessonResults.values.slice(0, 5).map((row, i) => (
-                                                <tr key={i}>{row.map((v, j) => <td key={j}>{v?.toString()}</td>)}</tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
-                                ) : (
-                                    <div className="text-muted p-2">Results will appear here...</div>
-                                )}
-                            </div>
+                        <div style={{ height: '220px', borderBottom: '1px solid var(--border-subtle)' }}>
+                            <CodeMirror
+                                value={lessonQuery}
+                                height="220px"
+                                extensions={[sql()]}
+                                theme="dark"
+                                onChange={(val) => setLessonQuery(val)}
+                                basicSetup={{
+                                    lineNumbers: true,
+                                    autocompletion: true,
+                                    bracketMatching: true
+                                }}
+                            />
+                        </div>
+                        <div className="mini-results overflow-auto text-xs" style={{ maxHeight: '250px', minHeight: '100px' }}>
+                            {lessonError ? (
+                                <div className="text-accent-red p-3">{lessonError}</div>
+                            ) : lessonResults ? (
+                                <table className="results-table mini">
+                                    <thead>
+                                        <tr>{lessonResults.columns.map((c, i) => <th key={i}>{c}</th>)}</tr>
+                                    </thead>
+                                    <tbody>
+                                        {lessonResults.values.slice(0, 5).map((row, i) => (
+                                            <tr key={i}>{row.map((v, j) => <td key={j}>{v?.toString()}</td>)}</tr>
+                                        ))}
+                                    </tbody>
+                                </table>
+                            ) : (
+                                <div className="text-muted p-3">Results will appear here...</div>
+                            )}
                         </div>
                     </div>
+
                     <div style={{ marginTop: '1rem', textAlign: 'center' }}>
                         <Link to="/editor" className="secondary-btn sm-btn">Open Full Playground</Link>
+                    </div>
+
+                    {/* AI Assistant — inline, no overlap */}
+                    <div className="ai-inline-panel glass-panel" style={{ marginTop: '1rem' }}>
+                        <div
+                            className="ai-toggle-bar flex justify-between items-center p-3 px-4 cursor-pointer"
+                            onClick={() => setIsAiOpen(!isAiOpen)}
+                            style={{ borderBottom: isAiOpen ? '1px solid var(--border-subtle)' : 'none' }}
+                        >
+                            <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
+                                <Sparkles size={16} /> AI SQL Assistant
+                            </span>
+                            <span className="text-muted text-xs">{isAiOpen ? 'Collapse' : 'Expand'}</span>
+                        </div>
+
+                        {isAiOpen && (
+                            <div className="ai-panel-body animate-fade-in" style={{ padding: '1rem' }}>
+                                <div className="ai-chat-messages" style={{ maxHeight: '250px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem' }}>
+                                    {chat.map((c, i) => (
+                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm ${c.role === 'user' ? 'user-msg' : ''}`}>
+                                            {c.msg}
+                                        </div>
+                                    ))}
+                                    {isThinking && <Loader2 className="animate-spin text-accent-cyan mx-auto" size={16} />}
+                                </div>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        placeholder="Ask about this topic..."
+                                        className="dataset-select"
+                                        style={{ flex: 1 }}
+                                        value={aiInput}
+                                        onChange={e => setAiInput(e.target.value)}
+                                        onKeyPress={e => e.key === 'Enter' && handleSend()}
+                                    />
+                                    <button className="primary-btn sm-btn" onClick={handleSend}><Send size={14} /></button>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>

@@ -8,11 +8,24 @@
 /* Hero Section */
 .hero-section {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1.2fr 1fr;
     gap: 4rem;
     align-items: center;
-    min-height: 70vh;
+    min-height: 80vh;
     padding-top: 2rem;
+    position: relative;
+}
+
+.hero-section::before {
+    content: '';
+    position: absolute;
+    top: -20%;
+    right: -10%;
+    width: 600px;
+    height: 600px;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.1) 0%, transparent 70%);
+    z-index: -1;
+    filter: blur(80px);
 }
 
 .hero-title {

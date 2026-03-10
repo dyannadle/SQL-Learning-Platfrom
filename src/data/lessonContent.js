@@ -99,6 +99,34 @@ How did we get here? From punch cards to the cloud.
         }
     },
 
+    // LEVEL 1: SQL Basics - Module 4: SQL Syntax & Schema
+    "level-1-m4-0": {
+        theory: `
+# 4.1 SQL Syntax Basics
+
+SQL is a **declarative** language. Unlike Python or Java where you tell the computer *how* to do things, in SQL you tell the database *what* you want.
+
+### The Standard Pattern
+\`\`\`sql
+SELECT column_name
+FROM table_name
+WHERE condition;
+\`\`\`
+
+### 💡 Key Rules:
+1. **Case Insensitivity**: \`SELECT\` is the same as \`select\`. However, by convention, we capitalize keywords.
+2. **Semicolons**: Use them to terminate statements.
+3. **Identifiers**: Table and column names should be lowercase and use underscores (snake_case).
+        `,
+        lab: {
+            mission: "Validate the syntax of an ecommerce query.",
+            tasks: [
+                "Fix the missing keyword in: \`* FROM employees;\`",
+                "Ensure the query \`SELECT name FROM products\` ends with a semicolon."
+            ]
+        }
+    },
+
     // LEVEL 1: SQL Basics - Module 6
     "level-1-m6-0": {
         theory: `
@@ -141,6 +169,87 @@ The ` + "`SELECT`" + ` statement is the foundation of SQL. It's how you ask the 
             tasks: [
                 "Select all columns from the 'products' table.",
                 "Try selecting only the 'name' and 'price' of items."
+            ]
+        }
+    },
+
+    // LEVEL 1: Module 7: Basic Filtering
+    "level-1-m7-2": {
+        theory: `
+# 7.3 The WHERE Clause
+
+The \`WHERE\` clause is the most powerful filter in your SQL toolkit. It allows you to select only the rows that meet specific criteria.
+
+### Comparison Operators:
+- \`=\` : Equals
+- \`<>\` or \`!=\` : Not Equals
+- \`>\` : Greater Than
+- \`<\` : Less Than
+- \`>=\` : Greater or Equal
+
+\`\`\`sql
+-- Get products more expensive than $50
+SELECT * FROM products WHERE price > 50;
+\`\`\`
+        `,
+        lab: {
+            mission: "Filter the products table.",
+            tasks: [
+                "Find all products in the 'Electronics' category.",
+                "Find products with a price exactly equal to 19.99."
+            ]
+        }
+    },
+
+    // LEVEL 2: Data Manipulation - Module 9: CRUD
+    "level-2-m9-0": {
+        theory: `
+# 9.1 The UPDATE Statement
+
+Data changes. When it does, we use the \`UPDATE\` statement. 
+
+> **⚡ WARNING**: Always use a \`WHERE\` clause with \`UPDATE\`. If you forget it, you will update **EVERY SINGLE ROW** in the table!
+
+### Syntax:
+\`\`\`sql
+UPDATE employees
+SET salary = 85000
+WHERE id = 5;
+\`\`\`
+        `,
+        lab: {
+            mission: "Adjust employee salaries.",
+            tasks: [
+                "Update the city of a customer with ID 10 to 'New York'.",
+                "Increase the price of a product by 10% (Hint: SET price = price * 1.1)."
+            ]
+        }
+    },
+
+    // LEVEL 2: Module 11: Keys & Constraints
+    "level-2-m11-0": {
+        theory: `
+# 11.1 Primary Keys
+
+A **Primary Key (PK)** is a column (or set of columns) that uniquely identifies each row in a table.
+
+### Rules for PKs:
+1. **Uniqueness**: No two rows can have the same PK.
+2. **Not Null**: A PK cannot be empty.
+3. **Stability**: PKs should rarely change.
+
+\`\`\`sql
+CREATE TABLE users (
+    user_id INT PRIMARY KEY,
+    username VARCHAR(50)
+);
+\`\`\`
+        `,
+        lab: {
+            mission: "Design a unique identifier system.",
+            tasks: [
+                "Explain why 'Full Name' is a bad Primary Key.",
+                "Create a small table for 'Books' with an integer Primary Key."
             ]
         }
     }

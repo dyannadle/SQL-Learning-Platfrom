@@ -156,15 +156,16 @@
 /* Topic Lesson Page */
 .lesson-grid {
     display: grid;
-    grid-template-columns: 5fr 4fr;
-    gap: 2rem;
-    height: calc(100vh - 200px);
-    min-height: 600px;
+    grid-template-columns: 1fr 520px;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    align-items: flex-start;
 }
 
 .lesson-content {
-    padding: 3rem;
+    padding: 2.5rem;
     overflow-y: auto;
+    border-radius: 12px;
 }
 
 .lesson-title {
@@ -209,18 +210,18 @@
 }
 
 .mini-editor-wrapper {
-    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: sticky;
+    top: 2rem;
 }
 
 .mini-editor-body {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.2);
+    flex-direction: column;
+    background: rgba(10, 14, 39, 0.4);
 }
 
 .placeholder-editor {
@@ -327,41 +328,33 @@
     color: white;
 }
 
-/* AI Assistant Styles */
-.ai-assistant-toggle {
-    position: absolute;
-    top: -50px;
-    right: 0;
-    background: rgba(99, 102, 241, 0.1);
-    color: var(--accent-cyan);
-    padding: 8px 16px;
-    border-radius: 100px;
-    border: 1px solid rgba(34, 211, 238, 0.3);
-    font-size: 0.85rem;
-    font-weight: 600;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    transition: all 0.2s;
+/* AI Assistant — Inline Panel (no overlap) */
+.ai-inline-panel {
+    border-radius: 12px;
+    overflow: hidden;
 }
 
-.ai-assistant-toggle:hover {
-    background: rgba(34, 211, 238, 0.15);
-    box-shadow: 0 0 15px rgba(34, 211, 238, 0.2);
+.ai-toggle-bar {
+    transition: background 0.2s;
 }
 
-.ai-sidebar {
-    position: absolute;
-    top: 0;
-    right: 0;
-    width: 300px;
-    height: 100%;
-    background: var(--bg-card);
-    z-index: 100;
-    display: flex;
-    flex-direction: column;
-    border-left: 1px solid var(--border-subtle);
+.ai-toggle-bar:hover {
+    background: rgba(34, 211, 238, 0.05);
+}
+
+.ai-panel-body .ai-chat-messages::-webkit-scrollbar {
+    width: 4px;
+}
+
+.ai-panel-body .ai-chat-messages::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 4px;
+}
+
+.user-msg {
+    background: rgba(99, 102, 241, 0.15) !important;
+    border-color: rgba(99, 102, 241, 0.3) !important;
+    margin-left: 1rem;
 }
 
 .ai-msg {
