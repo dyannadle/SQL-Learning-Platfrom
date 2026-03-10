@@ -77,7 +77,7 @@ const SQLEditor = () => {
         if (!query.trim()) return;
         try {
             setError(null);
-            const res = sqlEngine.execute(`EXPLAIN QUERY PLAN \${query}`);
+            const res = sqlEngine.execute(`EXPLAIN QUERY PLAN ${query}`);
             if (res && res.values) {
                 setPlanData(res.values);
                 setActiveTab('plan');
@@ -161,7 +161,7 @@ const SQLEditor = () => {
                             height="100%"
                             extensions={[sql()]}
                             onChange={(val) => setQuery(val)}
-                            theme={customTheme}
+                            theme="dark"
                             className="codemirror-wrapper"
                             basicSetup={{
                                 lineNumbers: true,

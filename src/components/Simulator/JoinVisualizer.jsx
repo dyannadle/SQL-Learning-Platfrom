@@ -100,7 +100,7 @@ const JoinVisualizer = () => {
                             <span>ID</span><span>Name</span>
                         </div>
                         {leftTable.map((row, i) => (
-                            <div key={i} className={`sim-row \${leftPointer === i ? 'active-pointer' : ''}`}>
+                            <div key={i} className={`sim-row ${leftPointer === i ? 'active-pointer' : ''}`}>
                                 <span>{row.id}</span><span>{row.name}</span>
                             </div>
                         ))}
@@ -122,7 +122,7 @@ const JoinVisualizer = () => {
                             <span>UID</span><span>City</span>
                         </div>
                         {rightTable.map((row, i) => (
-                            <div key={i} className={`sim-row \${rightPointer === i ? 'active-pointer' : ''}`}>
+                            <div key={i} className={`sim-row ${rightPointer === i ? 'active-pointer' : ''}`}>
                                 <span>{row.userId}</span><span>{row.city}</span>
                             </div>
                         ))}

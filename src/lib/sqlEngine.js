@@ -1,4 +1,5 @@
 import initSqlJs from 'sql.js';
+import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
 import { datasets } from '../data/datasets';
 
 class SQLEngine {
@@ -13,8 +14,8 @@ class SQLEngine {
         this.initPromise = (async () => {
             try {
                 const SQL = await initSqlJs({
-                    // Fetch WASM from CDN to avoid static asset config issues
-                    locateFile: file => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.8.0/${file}`
+                    // Fetch WASM using Vite URL import to bypass public folder caching issues
+                    locateFile: file => sqlWasmUrl
                 });
                 this.db = new SQL.Database();
                 return true;
@@ -30,13 +31,23 @@ class SQLEngine {
     loadDataset(name) {
         if (!this.db) throw new Error("Database not initialized");
 
+        // Keep track of loaded datasets to prevent duplicate execution errors
+        if (!this.loadedDatasets) this.loadedDatasets = new Set();
+        if (this.loadedDatasets.has(name)) return true;
+
         const sqlString = datasets[name];
         if (!sqlString) throw new Error(`Dataset ${name} not found`);
 
         try {
             this.db.run(sqlString);
+            this.loadedDatasets.add(name);
             return true;
         } catch (err) {
+            // If it fails because table exists, we still mark it as loaded
+            if (err.message.includes("already exists")) {
+                this.loadedDatasets.add(name);
+                return true;
+            }
             console.error(`Failed to load dataset ${name}:`, err);
             throw err;
         }

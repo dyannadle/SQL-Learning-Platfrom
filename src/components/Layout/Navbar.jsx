@@ -52,7 +52,7 @@ const Navbar = () => {
                         <div className="xp-bar-bg">
                             <div
                                 className="xp-bar-fill"
-                                style={{ width: `\${(xp / levelInfo.next) * 100}%` }}
+                                style={{ width: `${(xp / levelInfo.next) * 100}%` }}
                             ></div>
                         </div>
                     </div>

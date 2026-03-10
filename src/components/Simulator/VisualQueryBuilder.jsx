@@ -21,7 +21,7 @@ const VisualQueryBuilder = () => {
         }
     };
 
-    const generatedSql = `SELECT \${selectedColumns.join(', ') || '*'} \nFROM \${selectedTable}\nWHERE \${filter.column} \${filter.op} \${filter.value};`;
+    const generatedSql = `SELECT ${selectedColumns.join(', ') || '*'} \nFROM ${selectedTable}\nWHERE ${filter.column} ${filter.op} ${filter.value};`;
 
     return (
         <div className="visual-query-builder glass-panel p-6 mb-8">
@@ -53,7 +53,7 @@ const VisualQueryBuilder = () => {
                             {tables[selectedTable].map(col => (
                                 <button
                                     key={col}
-                                    className={`tag-pill \${selectedColumns.includes(col) ? 'active-tag' : ''}`}
+                                    className={`tag-pill ${selectedColumns.includes(col) ? 'active-tag' : ''}`}
                                     onClick={() => toggleColumn(col)}
                                 >
                                     {col}

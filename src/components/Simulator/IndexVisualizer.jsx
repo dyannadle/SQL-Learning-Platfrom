@@ -60,8 +60,8 @@ const IndexVisualizer = () => {
         const isActive = path.includes(node.id);
 
         return (
-            <div className={`btree-node-wrapper level-\${level}`}>
-                <div className={`btree-node glass-panel \${isActive ? 'active-node' : ''}`}>
+            <div className={`btree-node-wrapper level-${level}`}>
+                <div className={`btree-node glass-panel ${isActive ? 'active-node' : ''}`}>
                     <span className="node-val">{node.value}</span>
                     {isActive && <div className="scan-indicator">Scanning...</div>}
                 </div>
