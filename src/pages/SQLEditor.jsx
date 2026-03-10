@@ -1,10 +1,21 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
-import { Play, RotateCcw, Database, Table, AlertCircle } from 'lucide-react';
+import { Play, RotateCcw, Database, Table, AlertCircle, Plus, ChevronDown } from 'lucide-react';
 import { sqlEngine } from '../lib/sqlEngine';
 import QueryPlanTree from '../components/QueryVisualizer/QueryPlanTree';
 import './SQLEditor.css';
+
+const SQL_TEMPLATES = [
+    { label: 'Create Table', sql: `CREATE TABLE my_table (\n  id INTEGER PRIMARY KEY,\n  name TEXT NOT NULL,\n  email TEXT UNIQUE,\n  age INTEGER DEFAULT 0,\n  created_at TEXT DEFAULT CURRENT_TIMESTAMP\n);` },
+    { label: 'Insert Rows', sql: `INSERT INTO my_table (name, email, age) VALUES\n  ('Alice Smith', 'alice@example.com', 28),\n  ('Bob Jones', 'bob@example.com', 35),\n  ('Carol White', 'carol@example.com', 22);` },
+    { label: 'Select All', sql: `SELECT * FROM my_table;` },
+    { label: 'Update Row', sql: `UPDATE my_table\nSET age = 29\nWHERE name = 'Alice Smith';` },
+    { label: 'Delete Row', sql: `DELETE FROM my_table\nWHERE id = 1;` },
+    { label: 'Alter Table', sql: `ALTER TABLE my_table\nADD COLUMN phone TEXT;` },
+    { label: 'Drop Table', sql: `DROP TABLE IF EXISTS my_table;` },
+    { label: 'Join Query', sql: `SELECT e.name, d.department_name\nFROM employees e\nINNER JOIN departments d\n  ON e.department_id = d.id;` },
+];
 
 const SQLEditor = () => {
     const [query, setQuery] = useState('SELECT * FROM employees;');
@@ -14,62 +25,76 @@ const SQLEditor = () => {
     const [tables, setTables] = useState([]);
     const [activeDataset, setActiveDataset] = useState('employees');
     const [planData, setPlanData] = useState(null);
-    const [activeTab, setActiveTab] = useState('results'); // results, plan
+    const [activeTab, setActiveTab] = useState('results');
+    const [showTemplates, setShowTemplates] = useState(false);
+    const [statusMsg, setStatusMsg] = useState('');
 
-    // Custom dark theme for CodeMirror to match our design system
-    const customTheme = {
-        "&": {
-            backgroundColor: "transparent",
-            color: "#e2e8f0",
-            height: "100%",
-        },
-        ".cm-content": {
-            caretColor: "#6366f1",
-            fontFamily: "var(--font-code)",
-            fontSize: "15px",
-        },
-        "&.cm-focused .cm-cursor": {
-            borderLeftColor: "#6366f1"
-        },
-        "&.cm-focused .cm-selectionBackground, .cm-selectionBackground, .cm-content ::selection": {
-            backgroundColor: "rgba(99, 102, 241, 0.3)"
-        },
-        ".cm-gutters": {
-            backgroundColor: "rgba(10, 14, 39, 0.5)",
-            color: "#64748b",
-            border: "none",
+    const refreshSchema = useCallback(() => {
+        if (sqlEngine.db) {
+            setTables(sqlEngine.getTables());
         }
-    };
+    }, []);
 
     useEffect(() => {
         const initDb = async () => {
             try {
                 await sqlEngine.init();
                 sqlEngine.loadDataset(activeDataset);
-                setTables(sqlEngine.getTables());
+                refreshSchema();
                 setIsDbLoaded(true);
             } catch (err) {
                 setError("Failed to initialize database: " + err.message);
             }
         };
         initDb();
-    }, [activeDataset]);
+    }, [activeDataset, refreshSchema]);
 
     const handleRunQuery = () => {
         if (!query.trim()) return;
+        const trimmed = query.trim();
+        const isDDL = /^\s*(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE|TRUNCATE)/i.test(trimmed);
 
         try {
             setError(null);
+            setStatusMsg('');
             setActiveTab('results');
-            const res = sqlEngine.execute(query);
-            if (!res.columns) {
-                setResults({ columns: ['Result'], values: [['Success / No matching rows.']] });
+
+            // Multi-statement support
+            const statements = trimmed.split(';').filter(s => s.trim());
+            let lastResult = null;
+            let totalChanges = 0;
+
+            statements.forEach(stmt => {
+                const fullStmt = stmt.trim() + ';';
+                try {
+                    const res = sqlEngine.execute(fullStmt);
+                    if (res && res.columns && res.columns.length > 0) {
+                        lastResult = res;
+                    }
+                    if (/^\s*(INSERT|UPDATE|DELETE)/i.test(fullStmt)) {
+                        try {
+                            const changesRes = sqlEngine.db.exec("SELECT changes();");
+                            if (changesRes.length > 0) totalChanges += changesRes[0].values[0][0];
+                        } catch (e) { /* ignore */ }
+                    }
+                } catch (err) {
+                    throw new Error(`Error in: ${fullStmt.substring(0, 60)}...\n${err.message}`);
+                }
+            });
+
+            if (lastResult && lastResult.columns && lastResult.columns.length > 0) {
+                setResults(lastResult);
+                setStatusMsg(`${lastResult.values.length} row(s) returned`);
             } else {
-                setResults(res);
+                setResults({ columns: ['Status'], values: [['✓ Statement(s) executed successfully.']] });
+                setStatusMsg(totalChanges > 0 ? `${totalChanges} row(s) affected` : 'Executed successfully');
             }
+
+            if (isDDL) refreshSchema();
         } catch (err) {
             setError(err.message);
             setResults(null);
+            setStatusMsg('');
         }
     };
 
@@ -96,6 +121,7 @@ const SQLEditor = () => {
         setQuery(ds === 'employees' ? 'SELECT * FROM employees;' : 'SELECT * FROM products;');
         setResults(null);
         setError(null);
+        setStatusMsg('');
     };
 
     return (
@@ -103,27 +129,57 @@ const SQLEditor = () => {
             <div className="editor-header-bar glass-panel flex justify-between items-center">
                 <div className="flex items-center gap-4">
                     <Database className="text-accent-cyan" size={20} />
-                    <h1 className="editor-title">SQL Sandbox</h1>
-
-                    <select
-                        className="dataset-select"
-                        value={activeDataset}
-                        onChange={loadDataset}
-                    >
+                    <h1 className="editor-title">SQL Playground</h1>
+                    <select className="dataset-select" value={activeDataset} onChange={loadDataset}>
                         <option value="employees">Employees DB</option>
                         <option value="ecommerce">E-Commerce DB</option>
                     </select>
                 </div>
 
-                <div className="flex gap-2">
-                    <button className="secondary-btn" onClick={() => setQuery('')}>
+                <div className="flex gap-2 items-center">
+                    {/* SQL Templates Dropdown */}
+                    <div style={{ position: 'relative' }}>
+                        <button
+                            className="secondary-btn flex items-center gap-1"
+                            onClick={() => setShowTemplates(!showTemplates)}
+                        >
+                            <Plus size={14} /> Templates <ChevronDown size={12} />
+                        </button>
+                        {showTemplates && (
+                            <div className="template-dropdown glass-panel" style={{
+                                position: 'absolute', top: '100%', right: 0, marginTop: '0.5rem',
+                                minWidth: '200px', zIndex: 50, borderRadius: '8px', overflow: 'hidden',
+                                border: '1px solid var(--border-subtle)'
+                            }}>
+                                {SQL_TEMPLATES.map((t, i) => (
+                                    <button
+                                        key={i}
+                                        className="template-item"
+                                        style={{
+                                            display: 'block', width: '100%', textAlign: 'left',
+                                            padding: '10px 16px', background: 'none', border: 'none',
+                                            color: 'var(--text-secondary)', fontSize: '0.85rem',
+                                            cursor: 'pointer', borderBottom: '1px solid rgba(255,255,255,0.03)',
+                                            transition: 'background 0.15s', fontFamily: 'inherit'
+                                        }}
+                                        onMouseEnter={e => e.target.style.background = 'rgba(99,102,241,0.1)'}
+                                        onMouseLeave={e => e.target.style.background = 'none'}
+                                        onClick={() => { setQuery(t.sql); setShowTemplates(false); }}
+                                    >
+                                        {t.label}
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                    <button className="secondary-btn" onClick={() => { setQuery(''); setStatusMsg(''); }}>
                         <RotateCcw size={16} /> Clear
                     </button>
                     <button className="secondary-btn" onClick={handleExplainQuery} disabled={!isDbLoaded}>
-                        Explain Query
+                        Explain
                     </button>
                     <button className="primary-btn run-btn" onClick={handleRunQuery} disabled={!isDbLoaded}>
-                        <Play size={16} fill="white" /> {isDbLoaded ? 'Run Query' : 'Loading...'}
+                        <Play size={16} fill="white" /> {isDbLoaded ? 'Run' : 'Loading...'}
                     </button>
                 </div>
             </div>
@@ -131,21 +187,34 @@ const SQLEditor = () => {
             <div className="editor-layout">
                 <div className="editor-sidebar glass-panel">
                     <h3 className="sidebar-title flex items-center gap-2">
-                        <Database size={16} /> Schema browser
+                        <Database size={16} /> Schema Browser
                     </h3>
-
+                    <p style={{ fontSize: '0.72rem', color: 'var(--text-muted)', padding: '0 1rem 0.5rem', margin: 0 }}>
+                        Click a table to query it
+                    </p>
                     <div className="schema-tree">
-                        {tables.map(tableName => (
+                        {tables.length === 0 ? (
+                            <p className="text-muted text-sm" style={{ padding: '1rem' }}>
+                                No tables yet. Use <strong>Templates → Create Table</strong> to get started!
+                            </p>
+                        ) : tables.map(tableName => (
                             <div key={tableName} className="schema-table">
-                                <div className="table-name flex items-center gap-2">
+                                <div
+                                    className="table-name flex items-center gap-2"
+                                    style={{ cursor: 'pointer' }}
+                                    onClick={() => setQuery(`SELECT * FROM ${tableName} LIMIT 20;`)}
+                                    title={`Click to query ${tableName}`}
+                                >
                                     <Table size={14} className="text-muted" />
                                     <span>{tableName}</span>
                                 </div>
                                 <div className="table-columns">
                                     {sqlEngine.getSchema(tableName).map(col => (
                                         <div key={col.name} className="column-item flex justify-between">
-                                            <span className="col-name">{col.name}</span>
-                                            <span className="col-type">{col.type}</span>
+                                            <span className="col-name">
+                                                {col.pk ? '🔑 ' : ''}{col.name}
+                                            </span>
+                                            <span className="col-type">{col.type || 'ANY'}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -180,26 +249,46 @@ const SQLEditor = () => {
                     </div>
 
                     <div className="results-panel glass-panel">
-                        <div className="results-tabs" style={{ display: 'flex', borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(10,14,39,0.5)' }}>
-                            <button
-                                style={{ padding: '12px 16px', background: 'none', border: 'none', color: activeTab === 'results' ? 'var(--accent-cyan)' : 'var(--text-muted)', borderBottom: activeTab === 'results' ? '2px solid var(--accent-cyan)' : '2px solid transparent', cursor: 'pointer', fontWeight: 600 }}
-                                onClick={() => setActiveTab('results')}
-                            >
-                                Data Results
-                            </button>
-                            <button
-                                style={{ padding: '12px 16px', background: 'none', border: 'none', color: activeTab === 'plan' ? 'var(--accent-cyan)' : 'var(--text-muted)', borderBottom: activeTab === 'plan' ? '2px solid var(--accent-cyan)' : '2px solid transparent', cursor: planData ? 'pointer' : 'not-allowed', opacity: planData ? 1 : 0.5, fontWeight: 600 }}
-                                onClick={() => setActiveTab('plan')}
-                                disabled={!planData}
-                            >
-                                Query Plan
-                            </button>
+                        <div className="results-tabs" style={{
+                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                            borderBottom: '1px solid rgba(255,255,255,0.05)', backgroundColor: 'rgba(10,14,39,0.5)'
+                        }}>
+                            <div style={{ display: 'flex' }}>
+                                <button
+                                    style={{
+                                        padding: '12px 16px', background: 'none', border: 'none',
+                                        color: activeTab === 'results' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                                        borderBottom: activeTab === 'results' ? '2px solid var(--accent-cyan)' : '2px solid transparent',
+                                        cursor: 'pointer', fontWeight: 600
+                                    }}
+                                    onClick={() => setActiveTab('results')}
+                                >
+                                    Results
+                                </button>
+                                <button
+                                    style={{
+                                        padding: '12px 16px', background: 'none', border: 'none',
+                                        color: activeTab === 'plan' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                                        borderBottom: activeTab === 'plan' ? '2px solid var(--accent-cyan)' : '2px solid transparent',
+                                        cursor: planData ? 'pointer' : 'not-allowed', opacity: planData ? 1 : 0.5, fontWeight: 600
+                                    }}
+                                    onClick={() => setActiveTab('plan')}
+                                    disabled={!planData}
+                                >
+                                    Query Plan
+                                </button>
+                            </div>
+                            {statusMsg && (
+                                <span style={{ padding: '0 16px', fontSize: '0.8rem', color: 'var(--accent-green)', fontWeight: 600 }}>
+                                    {statusMsg}
+                                </span>
+                            )}
                         </div>
 
                         <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
                             {error ? (
-                                <div className="error-message flex items-center gap-2 m-4" style={{ margin: '1rem' }}>
-                                    <AlertCircle size={18} color="var(--accent-red)" />
+                                <div className="error-message flex items-center gap-2" style={{ margin: '1rem', whiteSpace: 'pre-wrap' }}>
+                                    <AlertCircle size={18} color="var(--accent-red)" style={{ flexShrink: 0 }} />
                                     {error}
                                 </div>
                             ) : activeTab === 'plan' && planData ? (
@@ -215,15 +304,20 @@ const SQLEditor = () => {
                                         <tbody>
                                             {results.values.map((row, rIdx) => (
                                                 <tr key={rIdx}>
-                                                    {row.map((val, cIdx) => <td key={cIdx}>{val !== null ? val.toString() : 'NULL'}</td>)}
+                                                    {row.map((val, cIdx) => (
+                                                        <td key={cIdx}>{val !== null ? val.toString() : <em style={{ color: 'var(--text-muted)' }}>NULL</em>}</td>
+                                                    ))}
                                                 </tr>
                                             ))}
                                         </tbody>
                                     </table>
                                 </div>
                             ) : (
-                                <div className="empty-results text-center text-muted mt-8" style={{ marginTop: '2rem' }}>
-                                    Run a query to see results or click Explain to view plan.
+                                <div className="empty-results text-center text-muted" style={{ marginTop: '3rem' }}>
+                                    <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Write SQL and click Run</p>
+                                    <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>
+                                        Full CRUD: CREATE, INSERT, SELECT, UPDATE, DELETE, ALTER, DROP
+                                    </p>
                                 </div>
                             )}
                         </div>
