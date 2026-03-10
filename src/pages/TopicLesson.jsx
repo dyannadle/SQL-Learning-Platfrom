@@ -6,6 +6,7 @@ import { markTopicComplete, isTopicComplete } from '../lib/progress';
 import JoinVisualizer from '../components/Simulator/JoinVisualizer';
 import IndexVisualizer from '../components/Simulator/IndexVisualizer';
 import VisualQueryBuilder from '../components/Simulator/VisualQueryBuilder';
+import DatabaseDesigner from '../components/Simulator/DatabaseDesigner';
 import QuizComponent from '../components/Quiz/QuizComponent';
 import { notifyAchievement } from '../components/NotificationToast';
 import { getLessonBody } from '../data/lessonContent';
@@ -108,6 +109,7 @@ const TopicLesson = () => {
                                 {levelId === 'level-4' && <JoinVisualizer />}
                                 {levelId === 'level-8' && <IndexVisualizer />}
                                 {levelId === 'level-1' && <VisualQueryBuilder />}
+                                {levelId === 'level-7' && <DatabaseDesigner />}
 
                                 <p className="mt-6">{content.lab.mission}</p>
                                 <ul className="lab-tasks">
@@ -233,11 +235,11 @@ const TopicLesson = () => {
                                 </button>
                             </div>
                         </div>
-                        <div className="mini-editor-body" style={{ height: '300px', display: 'flex', flexDirection: 'column' }}>
-                            <div style={{ flex: 1, borderBottom: '1px solid var(--border-subtle)' }}>
+                        <div className="mini-editor-body flex-1 flex flex-col min-h-0 bg-navy-light/30">
+                            <div style={{ height: '220px', borderBottom: '1px solid var(--border-subtle)' }}>
                                 <CodeMirror
                                     value={lessonQuery}
-                                    height="100%"
+                                    height="220px"
                                     extensions={[sql()]}
                                     theme="dark"
                                     onChange={(val) => setLessonQuery(val)}
@@ -248,7 +250,7 @@ const TopicLesson = () => {
                                     }}
                                 />
                             </div>
-                            <div className="mini-results p-2 overflow-auto text-xs bg-navy-light" style={{ height: '120px' }}>
+                            <div className="mini-results p-0 overflow-auto text-xs" style={{ maxHeight: '300px', minHeight: '150px' }}>
                                 {lessonError ? (
                                     <div className="text-accent-red p-2">{lessonError}</div>
                                 ) : lessonResults ? (

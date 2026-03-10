@@ -1,86 +1,110 @@
+export const challengeCategories = [
+  { id: 'basic', title: 'Basic Queries', count: 50 },
+  { id: 'filtering', title: 'Filtering & Conditions', count: 50 },
+  { id: 'aggregation', title: 'Aggregation', count: 50 },
+  { id: 'joins', title: 'Joins', count: 80 },
+  { id: 'subqueries', title: 'Subqueries', count: 50 },
+  { id: 'window', title: 'Window Functions', count: 60 },
+  { id: 'design', title: 'Database Design', count: 40 },
+  { id: 'optimization', title: 'Query Optimization', count: 40 },
+  { id: 'transactions', title: 'Transactions', count: 30 },
+  { id: 'business', title: 'Real Business Problems', count: 50 }
+];
+
 export const challenges = [
-    {
-        id: 'c1',
-        title: 'Top Earning Employees',
-        difficulty: 'Easy',
-        tags: ['SELECT', 'ORDER BY', 'LIMIT'],
-        description: `
-Write a query to find the top 3 highest paid employees.
-Return their \`first_name\`, \`last_name\`, and \`salary\`.
-Sort the results by \`salary\` in descending order.
-    `,
-        setupSQL: `
-      CREATE TABLE employees (id INTEGER, first_name TEXT, last_name TEXT, salary INTEGER);
-      INSERT INTO employees VALUES
-        (1, 'John', 'Doe', 75000),
-        (2, 'Jane', 'Smith', 90000),
-        (3, 'Michael', 'Johnson', 105000),
-        (4, 'Emily', 'Davis', 82000),
-        (5, 'David', 'Wilson', 115000),
-        (6, 'Sarah', 'Brown', 68000);
-    `,
-        solution: `SELECT first_name, last_name, salary FROM employees ORDER BY salary DESC LIMIT 3;`
-    },
-    {
-        id: 'c2',
-        title: 'Department Average Salary',
-        difficulty: 'Medium',
-        tags: ['GROUP BY', 'JOIN', 'AGGREGATION'],
-        description: `
-Write a query to find the average salary for each department.
-Return the \`department_name\` and the \`avg_salary\`.
-Round the average salary to 0 decimal places if possible, or just the whole number.
-Sort the results by the average salary in descending order.
-    `,
-        setupSQL: `
-      CREATE TABLE departments (id INTEGER PRIMARY KEY, name TEXT);
-      INSERT INTO departments VALUES (1, 'Engineering'), (2, 'Sales'), (3, 'HR');
-      
-      CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER, dept_id INTEGER);
-      INSERT INTO employees VALUES
-        (1, 'Alice', 95000, 1),
-        (2, 'Bob', 110000, 1),
-        (3, 'Charlie', 60000, 2),
-        (4, 'Diana', 80000, 2),
-        (5, 'Eve', 75000, 3);
-    `,
-        solution: `
-      SELECT d.name as department_name, ROUND(AVG(e.salary), 0) as avg_salary
-      FROM departments d
-      JOIN employees e ON d.id = e.dept_id
-      GROUP BY d.id, d.name
-      ORDER BY avg_salary DESC;
-    `
-    },
-    {
-        id: 'c3',
-        title: 'Consecutive Active Users',
-        difficulty: 'Hard',
-        tags: ['WINDOW FUNCTIONS', 'DATES', 'LEAD/LAG'],
-        description: `
-Write a query to find users who logged in for 3 or more consecutive days.
-Return the \`user_id\`.
-Ensure the results are unique and ordered by \`user_id\` ascending.
-    `,
-        setupSQL: `
-      CREATE TABLE logins (user_id INTEGER, login_date DATE);
-      INSERT INTO logins VALUES
-        (1, '2023-10-01'), (1, '2023-10-02'), (1, '2023-10-03'), (1, '2023-10-06'),
-        (2, '2023-10-01'), (2, '2023-10-02'), (2, '2023-10-04'),
-        (3, '2023-10-05'), (3, '2023-10-06'), (3, '2023-10-07'), (3, '2023-10-08');
-    `,
-        solution: `
-      WITH CTE AS (
-        SELECT user_id, login_date,
-               LEAD(login_date, 1) OVER(PARTITION BY user_id ORDER BY login_date) as next_1,
-               LEAD(login_date, 2) OVER(PARTITION BY user_id ORDER BY login_date) as next_2
-        FROM logins
-      )
-      SELECT DISTINCT user_id 
-      FROM CTE 
-      WHERE strftime('%J', next_1) - strftime('%J', login_date) = 1
-        AND strftime('%J', next_2) - strftime('%J', login_date) = 2
-      ORDER BY user_id;
-    `
-    }
+  // --- CATEGORY 1: BASIC QUERIES ---
+  {
+    id: 'basic-1',
+    category: 'basic',
+    title: 'Retrieve All Employees',
+    difficulty: 'Beginner',
+    tags: ['SELECT'],
+    description: 'Select all columns and all rows from the `employees` table.',
+    setupSQL: `
+            CREATE TABLE employees (id INTEGER, name TEXT, salary INTEGER);
+            INSERT INTO employees VALUES (1, 'John', 75000), (2, 'Jane', 90000);
+        `,
+    solution: 'SELECT * FROM employees;',
+    hints: ['Use the * wildcard to select all columns.', 'Remember the semicolon.']
+  },
+  // --- COMPANY INTERVIEW PROBLEMS ---
+  {
+    id: 'amazon-1',
+    category: 'business',
+    company: 'Amazon',
+    title: 'Top 3 Spenders',
+    difficulty: 'Medium',
+    tags: ['GROUP BY', 'ORDER BY', 'LIMIT'],
+    description: `
+**Amazon Interview Question**
+Find the top 3 customers by total spending.
+Return \`customer_id\` and \`total_spent\`.
+        `,
+    setupSQL: `
+            CREATE TABLE orders (order_id INTEGER, customer_id INTEGER, amount DECIMAL);
+            INSERT INTO orders VALUES 
+                (1, 101, 250.00), (2, 102, 150.00), (3, 101, 300.00),
+                (4, 103, 800.00), (5, 102, 50.00), (6, 104, 100.00);
+        `,
+    solution: 'SELECT customer_id, SUM(amount) as total_spent FROM orders GROUP BY customer_id ORDER BY total_spent DESC LIMIT 3;',
+    hints: ['Use SUM() to calculate total spending.', 'GROUP BY the customer_id.']
+  },
+  {
+    id: 'google-1',
+    category: 'window',
+    company: 'Google',
+    title: 'Most Searched per Day',
+    difficulty: 'Hard',
+    tags: ['WINDOW FUNCTIONS', 'RANKING'],
+    description: `
+**Google Interview Question**
+Find the most searched query per day.
+Return \`search_date\`, \`search_query\`, and \`search_count\`.
+        `,
+    setupSQL: `
+            CREATE TABLE search_logs (user_id INTEGER, search_query TEXT, search_date DATE);
+            INSERT INTO search_logs VALUES 
+                (1, 'sql join', '2023-10-01'), (2, 'sql join', '2023-10-01'),
+                (3, 'window functions', '2023-10-01'), (1, 'postgres vs mysql', '2023-10-02'),
+                (2, 'postgres vs mysql', '2023-10-02'), (3, 'sql join', '2023-10-02');
+        `,
+    solution: `
+            WITH Counts AS (
+                SELECT search_date, search_query, COUNT(*) as search_count
+                FROM search_logs
+                GROUP BY search_date, search_query
+            ),
+            Ranked AS (
+                SELECT search_date, search_query, search_count,
+                       RANK() OVER(PARTITION BY search_date ORDER BY search_count DESC) as rnk
+                FROM Counts
+            )
+            SELECT search_date, search_query, search_count
+            FROM Ranked
+            WHERE rnk = 1;
+        `,
+    hints: ['Use a CTE to first count queries per day.', 'Use RANK() over partitioned dates.']
+  },
+  {
+    id: 'netflix-1',
+    category: 'business',
+    company: 'Netflix',
+    title: 'Binge Watchers',
+    difficulty: 'Medium',
+    tags: ['HAVING', 'GROUP BY'],
+    description: `
+**Netflix Interview Question**
+Find users who watched more than 5 movies in a single day.
+Return \`user_id\` and \`watch_date\`.
+        `,
+    setupSQL: `
+            CREATE TABLE watch_history (user_id INTEGER, movie_id INTEGER, watch_date DATE);
+            INSERT INTO watch_history VALUES 
+                (1, 101, '2023-10-01'), (1, 102, '2023-10-01'), (1, 103, '2023-10-01'),
+                (1, 104, '2023-10-01'), (1, 105, '2023-10-01'), (1, 106, '2023-10-01'),
+                (2, 201, '2023-10-01'), (2, 202, '2023-10-01');
+        `,
+    solution: 'SELECT user_id, watch_date FROM watch_history GROUP BY user_id, watch_date HAVING COUNT(movie_id) > 5;',
+    hints: ['Group by both user and date.', 'Use HAVING to filter after aggregating.']
+  }
 ];

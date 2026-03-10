@@ -156,15 +156,16 @@
 /* Topic Lesson Page */
 .lesson-grid {
     display: grid;
-    grid-template-columns: 5fr 4fr;
-    gap: 2rem;
-    height: calc(100vh - 200px);
-    min-height: 600px;
+    grid-template-columns: 1fr 520px;
+    gap: 1.5rem;
+    margin-top: 1rem;
+    align-items: flex-start;
 }
 
 .lesson-content {
-    padding: 3rem;
+    padding: 2.5rem;
     overflow-y: auto;
+    border-radius: 12px;
 }
 
 .lesson-title {
@@ -209,18 +210,18 @@
 }
 
 .mini-editor-wrapper {
-    height: 100%;
     display: flex;
     flex-direction: column;
     overflow: hidden;
+    position: sticky;
+    top: 2rem;
 }
 
 .mini-editor-body {
     flex: 1;
     display: flex;
-    align-items: center;
-    justify-content: center;
-    background: rgba(0, 0, 0, 0.2);
+    flex-direction: column;
+    background: rgba(10, 14, 39, 0.4);
 }
 
 .placeholder-editor {
