@@ -44,7 +44,6 @@
 .level-desc-large {
     font-size: 1.15rem;
     color: var(--text-secondary);
-    max-width: 800px;
     line-height: 1.6;
 }
 
@@ -155,9 +154,9 @@
 }
 
 /* Topic Lesson Page */
-.lesson-grid.three-col {
+.lesson-grid.two-col {
     display: grid;
-    grid-template-columns: 1fr 1.2fr 320px;
+    grid-template-columns: 1.2fr 1fr;
     gap: 1.5rem;
     margin-top: 1rem;
     align-items: flex-start;
@@ -169,7 +168,7 @@
 }
 
 .lesson-content {
-    padding: 2.25rem;
+    padding: 1.5rem;
     overflow-y: auto;
     border-radius: 12px;
     min-width: 0;
@@ -309,8 +308,7 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    position: sticky;
-    top: 2rem;
+    flex: 1;
 }
 
 .mini-editor-body {
@@ -380,19 +378,52 @@
     color: var(--text-secondary);
 }
 
-.interview-q {
+.interview-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 1.5rem;
     margin-bottom: 2rem;
 }
 
+.interview-q-card {
+    padding: 1.5rem;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border-subtle);
+    border-radius: 12px;
+    transition: transform 0.2s, border-color 0.2s;
+}
+
+.interview-q-card:hover {
+    transform: translateY(-2px);
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.q-title {
+    font-size: 1.05rem;
+    line-height: 1.5;
+    color: var(--text-primary);
+}
+
 .ans-hint {
-    background: rgba(255, 255, 255, 0.03);
-    padding: 0.8rem 1rem;
-    border-radius: 6px;
-    margin-top: 0.5rem;
-    font-size: 0.9rem;
-    color: var(--text-muted);
-    font-style: italic;
-    border-left: 3px solid var(--accent-purple);
+    background: rgba(16, 185, 129, 0.08);
+    padding: 1rem;
+    border-radius: 8px;
+    border-left: 3px solid var(--accent-green);
+}
+
+.ans-label {
+    display: block;
+    color: var(--accent-green);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 0.5rem;
+}
+
+.ans-text {
+    line-height: 1.6;
+    color: var(--text-secondary);
+    font-size: 0.95rem;
 }
 
 .quiz-question {
@@ -543,6 +574,9 @@
 }
 
 .lesson-editor-side {
-    position: relative;
-    max-height: 85vh;
+    position: sticky;
+    top: 2rem;
+    height: calc(85vh + 0rem);
+    display: flex;
+    flex-direction: column;
 }

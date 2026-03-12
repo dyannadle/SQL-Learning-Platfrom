@@ -1,8 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
-import { Play, RotateCcw, Database, Table, AlertCircle, Plus, ChevronDown, Sparkles, Send, Loader2 } from 'lucide-react';
-import { getAiResponse } from '../lib/aiService';
 import { sqlEngine } from '../lib/sqlEngine';
 import QueryPlanTree from '../components/QueryVisualizer/QueryPlanTree';
 import './SQLEditor.css';
@@ -30,9 +28,6 @@ const SQLEditor = () => {
     const [showTemplates, setShowTemplates] = useState(false);
     const [statusMsg, setStatusMsg] = useState('');
     const [tableSchemas, setTableSchemas] = useState({});
-    const [aiInput, setAiInput] = useState('');
-    const [chat, setChat] = useState([{ role: 'ai', msg: "Hi! I'm your SQL Assistant. I can help you write, debug, and explain complex queries!" }]);
-    const [isThinking, setIsThinking] = useState(false);
 
     const refreshSchema = useCallback(async () => {
         const tableList = await sqlEngine.getTables();
@@ -123,17 +118,6 @@ const SQLEditor = () => {
         }
     };
 
-    const handleSend = async () => {
-        if (!aiInput.trim()) return;
-        const userMsg = aiInput;
-        setChat(prev => [...prev, { role: 'user', msg: userMsg }]);
-        setAiInput('');
-        setIsThinking(true);
-        const response = await getAiResponse(userMsg);
-        setChat(prev => [...prev, { role: 'ai', msg: response }]);
-        setIsThinking(false);
-    };
-
     const loadDataset = (e) => {
         const ds = e.target.value;
         setActiveDataset(ds);
@@ -203,7 +187,7 @@ const SQLEditor = () => {
                 </div>
             </div>
 
-            <div className="editor-layout three-col-layout">
+            <div className="editor-layout two-col-layout">
                 <div className="editor-sidebar glass-panel">
                     <h3 className="sidebar-title flex items-center gap-2">
                         <Database size={16} /> Schema Browser
@@ -342,53 +326,8 @@ const SQLEditor = () => {
                         </div>
                     </div>
                 </div>
-                </div>
-
-                {/* ─── Column 3: AI Assistant ─── */}
-                <div className="ai-sidebar-col">
-                    <div className="ai-sticky-panel glass-panel depth-high">
-                        <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
-                            <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
-                                <Sparkles size={18} /> AI SQL Tutor
-                            </span>
-                        </div>
-                        <div className="ai-chat-body">
-                            <div className="ai-chat-messages custom-scrollbar">
-                                {chat.map((c, i) => (
-                                    <div key={i} className={`ai-msg-bubble ${c.role === 'user' ? 'user' : 'ai'}`}>
-                                        <div className="msg-content">{c.msg}</div>
-                                    </div>
-                                ))}
-                                {isThinking && (
-                                    <div className="ai-msg-bubble ai">
-                                        <div className="msg-content thinking">
-                                            <Loader2 className="animate-spin" size={14} /> Tutor is thinking...
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="ai-input-area border-t border-subtle">
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ask a question..." 
-                                        className="ai-input-field"
-                                        value={aiInput} 
-                                        onChange={e => setAiInput(e.target.value)} 
-                                        onKeyPress={e => e.key === 'Enter' && handleSend()} 
-                                    />
-                                    <button className="primary-btn sm-btn ai-send-btn" onClick={handleSend}>
-                                        <Send size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="ai-footer p-3 text-center text-[10px] text-muted uppercase tracking-widest border-t border-subtle">
-                            Real-time AI Playground Help
-                        </div>
-                    </div>
-                </div>
             </div>
+        </div>
     );
 };
 

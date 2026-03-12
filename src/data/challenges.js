@@ -1,3 +1,5 @@
+import { basic } from './challenges_basic';
+import { filtering, aggregation, joins, subqueries, windowFunctions } from './challenges_advanced';
 import { design, optimization, transactions, business } from './challenges_extra';
 import { proChallenges } from './challenges_pro';
 

@@ -1,7 +1,7 @@
 import React from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { curriculumData } from '../data/curriculum';
-import { ArrowLeft, Terminal, Check, BookOpen, Microscope, MessageSquare, HelpCircle } from 'lucide-react';
+import { ArrowLeft, Terminal, Check, BookOpen, Microscope, MessageSquare, HelpCircle, Play, RotateCcw } from 'lucide-react'; 
 import { markTopicComplete, isTopicComplete } from '../lib/progress';
 import JoinVisualizer from '../components/Simulator/JoinVisualizer';
 import IndexVisualizer from '../components/Simulator/IndexVisualizer';
@@ -10,10 +10,8 @@ import DatabaseDesigner from '../components/Simulator/DatabaseDesigner';
 import QuizComponent from '../components/Quiz/QuizComponent';
 import { notifyAchievement } from '../components/NotificationToast';
 import { getLessonBody } from '../data/lessonContent';
-import { getAiResponse } from '../lib/aiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
-import { Sparkles, X, Send, Loader2, Play, RotateCcw } from 'lucide-react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { sqlEngine } from '../lib/sqlEngine';
@@ -72,27 +70,12 @@ const TopicLesson = () => {
     const topicPathId = `${levelId}-${moduleId}-${tIdx}`;
     const [completed, setCompleted] = React.useState(isTopicComplete(topicPathId));
     const [activeTab, setActiveTab] = React.useState('theory');
-    const [isAiOpen, setIsAiOpen] = React.useState(false);
-    const [aiInput, setAiInput] = React.useState('');
-    const [chat, setChat] = React.useState([{ role: 'ai', msg: "Hi! I'm your SQL tutor. Ask me anything about this lesson!" }]);
-    const [isThinking, setIsThinking] = React.useState(false);
     const [lessonQuery, setLessonQuery] = React.useState('SELECT * FROM products LIMIT 5;');
     const [lessonResults, setLessonResults] = React.useState(null);
     const [lessonError, setLessonError] = React.useState(null);
     const [statusMsg, setStatusMsg] = React.useState('');
     const [showAnswer, setShowAnswer] = React.useState({});
     const content = getLessonBody(topicPathId);
-
-    const handleSend = async () => {
-        if (!aiInput.trim()) return;
-        const userMsg = aiInput;
-        setChat(prev => [...prev, { role: 'user', msg: userMsg }]);
-        setAiInput('');
-        setIsThinking(true);
-        const response = await getAiResponse(userMsg);
-        setChat(prev => [...prev, { role: 'ai', msg: response }]);
-        setIsThinking(false);
-    };
 
     const handleRunLesson = async () => {
         if (!lessonQuery.trim()) return;
@@ -145,7 +128,7 @@ const TopicLesson = () => {
                 </Link>
             </div>
 
-            <div className="lesson-grid three-col">
+            <div className="lesson-grid two-col">
                 <div className="lesson-content glass-panel depth-high">
                     <div className="lesson-tabs flex gap-4 mb-6 border-b border-subtle">
                         <button className={`lesson-tab-btn ${activeTab === 'theory' ? 'active' : ''}`} onClick={() => setActiveTab('theory')}>
@@ -195,27 +178,28 @@ const TopicLesson = () => {
                                 <p style={{ marginBottom: '2rem', fontSize: '1.05rem' }}>
                                     Practice these real interview questions. Click "Show Answer" to reveal the model answer.
                                 </p>
-                                {questions.map((item, i) => (
-                                    <div key={i} className="interview-q" style={{ marginBottom: '1.5rem', padding: '1.25rem', background: 'rgba(255,255,255,0.02)', borderRadius: '10px', border: '1px solid var(--border-subtle)' }}>
-                                        <strong style={{ fontSize: '1rem', lineHeight: 1.5 }}>Q{i + 1}: {item.q}</strong>
-                                        <div style={{ marginTop: '0.75rem' }}>
-                                            {showAnswer[i] ? (
-                                                <div className="ans-hint animate-fade-in" style={{ background: 'rgba(16,185,129,0.08)', padding: '1rem', borderRadius: '8px', borderLeft: '3px solid var(--accent-green)' }}>
-                                                    <strong style={{ color: 'var(--accent-green)', fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Model Answer:</strong>
-                                                    <p style={{ marginTop: '0.5rem', lineHeight: 1.6, color: 'var(--text-secondary)', fontSize: '0.95rem' }}>{item.a}</p>
-                                                </div>
-                                            ) : (
-                                                <button
-                                                    className="secondary-btn sm-btn"
-                                                    onClick={() => setShowAnswer(prev => ({ ...prev, [i]: true }))}
-                                                    style={{ marginTop: '0.25rem' }}
-                                                >
-                                                    Show Answer
-                                                </button>
-                                            )}
+                                <div className="interview-grid">
+                                    {questions.map((item, i) => (
+                                        <div key={i} className="interview-q-card glass-panel flex flex-col">
+                                            <strong className="q-title">Q{i + 1}: {item.q}</strong>
+                                            <div className="q-action-area mt-auto pt-4">
+                                                {showAnswer[i] ? (
+                                                    <div className="ans-hint animate-fade-in">
+                                                        <strong className="ans-label">Model Answer:</strong>
+                                                        <p className="ans-text">{item.a}</p>
+                                                    </div>
+                                                ) : (
+                                                    <button
+                                                        className="secondary-btn sm-btn w-full"
+                                                        onClick={() => setShowAnswer(prev => ({ ...prev, [i]: true }))}
+                                                    >
+                                                        Show Answer
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
-                                    </div>
-                                ))}
+                                    ))}
+                                </div>
                             </div>
                         )}
 
@@ -276,10 +260,11 @@ const TopicLesson = () => {
                                 </button>
                             </div>
                         </div>
-                        <div style={{ height: '240px', borderBottom: '1px solid var(--border-subtle)' }}>
+                        <div style={{ flex: 1, minHeight: '200px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', flexDirection: 'column' }}>
                             <CodeMirror
                                 value={lessonQuery}
-                                height="240px"
+                                height="100%"
+                                style={{ flex: 1, overflow: 'auto' }}
                                 extensions={[sql()]}
                                 theme="dark"
                                 onChange={(val) => setLessonQuery(val)}
@@ -308,51 +293,6 @@ const TopicLesson = () => {
                         <Link to="/editor" className="secondary-btn sm-btn">Open Full Playground</Link>
                     </div>
 
-                </div>
-
-                {/* ─── Column 3: Global AI Assistant ─── */}
-                <div className="ai-sidebar-col">
-                    <div className="ai-sticky-panel glass-panel depth-high">
-                        <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
-                            <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
-                                <Sparkles size={18} /> AI SQL Tutor
-                            </span>
-                        </div>
-                        <div className="ai-chat-body">
-                            <div className="ai-chat-messages custom-scrollbar">
-                                {chat.map((c, i) => (
-                                    <div key={i} className={`ai-msg-bubble ${c.role === 'user' ? 'user' : 'ai'}`}>
-                                        <div className="msg-content">{c.msg}</div>
-                                    </div>
-                                ))}
-                                {isThinking && (
-                                    <div className="ai-msg-bubble ai">
-                                        <div className="msg-content thinking">
-                                            <Loader2 className="animate-spin" size={14} /> Tutor is thinking...
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                            <div className="ai-input-area border-t border-subtle">
-                                <div className="flex gap-2">
-                                    <input 
-                                        type="text" 
-                                        placeholder="Ask a question..." 
-                                        className="ai-input-field"
-                                        value={aiInput} 
-                                        onChange={e => setAiInput(e.target.value)} 
-                                        onKeyPress={e => e.key === 'Enter' && handleSend()} 
-                                    />
-                                    <button className="primary-btn sm-btn ai-send-btn" onClick={handleSend}>
-                                        <Send size={16} />
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="ai-footer p-3 text-center text-[10px] text-muted uppercase tracking-widest border-t border-subtle">
-                            Real-time AI Feedback
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
