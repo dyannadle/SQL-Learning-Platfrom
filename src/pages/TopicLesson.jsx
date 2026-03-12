@@ -27,6 +27,8 @@ const interviewBank = {
         { q: 'What is a Primary Key vs a Unique Key?', a: 'Primary Key: unique + NOT NULL + only one per table. Unique Key: unique but allows NULLs + multiple per table.' },
         { q: 'What is normalization? Name the first three normal forms.', a: '1NF: No repeating groups, atomic values. 2NF: 1NF + no partial dependencies. 3NF: 2NF + no transitive dependencies. Purpose: reduce redundancy.' },
         { q: 'What happens if you run UPDATE without WHERE?', a: 'It updates EVERY row in the table. This is one of the most dangerous SQL mistakes in production.' },
+        { q: 'What is a Foreign Key and why is it important?', a: 'A Foreign Key is a column that links to a Primary Key in another table. It enforces "Referential Integrity," ensuring that relationships between tables stay consistent.' },
+        { q: 'What is an Index? How does it improve performance?', a: 'An index is a data structure (usually a B-Tree) that speeds up data retrieval. It allows the database to find rows without scanning the entire table, at the cost of slightly slower writes.' },
     ],
     'level-0': [
         { q: 'What is a database? How is it different from a spreadsheet?', a: 'A database is a structured collection of data managed by a DBMS. Unlike spreadsheets, databases support concurrent access, ACID transactions, indexing for fast queries, and can handle millions of rows efficiently.' },
@@ -34,6 +36,8 @@ const interviewBank = {
         { q: 'What does ACID stand for?', a: 'Atomicity (all or nothing), Consistency (data stays valid), Isolation (concurrent transactions don\'t interfere), Durability (committed data survives crashes).' },
         { q: 'Explain structured vs unstructured data with examples.', a: 'Structured: employee records, financial transactions (fits in tables). Unstructured: images, videos, emails (no fixed schema). Semi-structured: JSON, XML (has some organization).' },
         { q: 'When would you choose NoSQL over SQL?', a: 'When you need: flexible schemas (rapidly changing data models), horizontal scaling (massive distributed data), high write throughput (real-time logging), or document storage (content management).' },
+        { q: 'What is a Relational Database Management System (RDBMS)?', a: 'An RDBMS is software that manages relational databases using SQL. Examples include MySQL, PostgreSQL, and SQL Server.' },
+        { q: 'Why is data integrity critical in a production database?', a: 'Data integrity ensures accuracy and reliability. Constraints like NOT NULL and UNIQUE prevent garbage data from breaking application logic.' },
     ],
     'level-1': [
         { q: 'What is the execution order of a SQL query?', a: 'FROM → WHERE → GROUP BY → HAVING → SELECT → ORDER BY → LIMIT. This is why you can\'t use a column alias in WHERE — SELECT hasn\'t run yet!' },
@@ -42,6 +46,8 @@ const interviewBank = {
         { q: 'What is the difference between DELETE, TRUNCATE, and DROP?', a: 'DELETE: removes specific rows (can use WHERE, logged, can rollback). TRUNCATE: removes all rows (faster, can\'t rollback in most DBs). DROP: removes the entire table structure.' },
         { q: 'How do you paginate results in SQL?', a: 'Use LIMIT and OFFSET: SELECT * FROM users LIMIT 10 OFFSET 20; returns rows 21-30. For large datasets, prefer keyset pagination (WHERE id > last_id LIMIT 10).' },
         { q: 'What is the difference between UNION and UNION ALL?', a: 'UNION removes duplicates (slower, sorts results). UNION ALL keeps all rows including duplicates (faster). Use UNION ALL when you know there won\'t be duplicates.' },
+        { q: 'Predict the result: SELECT COUNT(*) FROM table WHERE col = NULL;', a: 'The result will be 0. Comparison with NULL using "=" always returns UNKNOWN/NULL, which WHERE treats as false. You must use IS NULL.' },
+        { q: 'Explain the LIKE operator and the wildcards % and _.', a: '% represents zero or more characters. _ represents a single character. Example: "A%" matches anything starting with A, while "A_" matches 2-letter words starting with A.' },
     ],
     'level-2': [
         { q: 'What is a transaction? When would you use one?', a: 'A transaction groups multiple SQL statements into one atomic unit. Use BEGIN/COMMIT/ROLLBACK. Essential when transferring money (debit + credit must both succeed or both fail).' },
@@ -49,6 +55,9 @@ const interviewBank = {
         { q: 'What is a deadlock and how do you prevent it?', a: 'A deadlock occurs when two transactions wait for each other\'s locks. Prevent by: consistent lock ordering, short transactions, using timeouts, and avoiding unnecessary locks.' },
         { q: 'Explain the concept of database denormalization.', a: 'Intentionally adding redundancy to improve read performance. Trade-off: faster reads but slower writes and risk of data inconsistency. Used in data warehouses and read-heavy systems.' },
         { q: 'What are window functions? Give an example.', a: 'Functions that operate on a set of rows related to the current row without collapsing them. Example: SELECT name, salary, RANK() OVER (ORDER BY salary DESC) FROM employees;' },
+        { q: 'What is an "Index Scan" vs an "Index Seek"?', a: 'Index Scan: The database reads the entire index (slower). Index Seek: The database navigates directly to a specific value in the index tree (much faster).' },
+        { q: 'Explain the purpose of the EXPLAIN command.', a: 'EXPLAIN shows the execution plan of a query, revealing whether the database will use indexes or full table scans. It is the primary tool for query optimization.' },
+        { q: 'What is a Common Table Expression (CTE) and why use it?', a: 'A CTE is a temporary named result set (using the WITH keyword). It improves query readability and allows for recursive queries (like traversing folder hierarchies).' },
     ],
 };
 
@@ -91,31 +100,27 @@ const TopicLesson = () => {
             await sqlEngine.init();
             sqlEngine.loadDataset('ecommerce');
             const trimmed = lessonQuery.trim();
-            const isDDL = /^\s*(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE)/i.test(trimmed);
 
             // Multi-statement support
             const stmts = trimmed.split(';').filter(s => s.trim());
             let lastRes = null;
-            let changes = 0;
+            let totalAffected = 0;
+            let timeTaken = 0;
 
-            stmts.forEach(s => {
+            for (const s of stmts) {
                 const full = s.trim() + ';';
-                const res = sqlEngine.execute(full);
+                const res = await sqlEngine.execute(full);
                 if (res && res.columns && res.columns.length > 0) lastRes = res;
-                if (/^\s*(INSERT|UPDATE|DELETE)/i.test(full)) {
-                    try {
-                        const c = sqlEngine.db.exec("SELECT changes();");
-                        if (c.length > 0) changes += c[0].values[0][0];
-                    } catch (e) { /* ignore */ }
-                }
-            });
+                totalAffected += (res.affected_rows || 0);
+                timeTaken += (res.execution_time_ms || 0);
+            }
 
             if (lastRes && lastRes.columns.length > 0) {
                 setLessonResults(lastRes);
-                setStatusMsg(`${lastRes.values.length} row(s)`);
+                setStatusMsg(`${lastRes.values.length} row(s) | ${timeTaken.toFixed(1)}ms`);
             } else {
                 setLessonResults({ columns: ['Status'], values: [['✓ Executed successfully']] });
-                setStatusMsg(changes > 0 ? `${changes} row(s) affected` : 'Done');
+                setStatusMsg(totalAffected > 0 ? `${totalAffected} row(s) affected | ${timeTaken.toFixed(1)}ms` : `Done | ${timeTaken.toFixed(1)}ms`);
             }
             setLessonError(null);
         } catch (err) {
@@ -140,8 +145,8 @@ const TopicLesson = () => {
                 </Link>
             </div>
 
-            <div className="lesson-grid">
-                <div className="lesson-content glass-panel">
+            <div className="lesson-grid three-col">
+                <div className="lesson-content glass-panel depth-high">
                     <div className="lesson-tabs flex gap-4 mb-6 border-b border-subtle">
                         <button className={`lesson-tab-btn ${activeTab === 'theory' ? 'active' : ''}`} onClick={() => setActiveTab('theory')}>
                             <BookOpen size={16} /> Theory
@@ -303,31 +308,50 @@ const TopicLesson = () => {
                         <Link to="/editor" className="secondary-btn sm-btn">Open Full Playground</Link>
                     </div>
 
-                    {/* AI Assistant */}
-                    <div className="ai-inline-panel glass-panel" style={{ marginTop: '0.75rem' }}>
-                        <div className="ai-toggle-bar flex justify-between items-center p-3 px-4 cursor-pointer"
-                            onClick={() => setIsAiOpen(!isAiOpen)}
-                            style={{ borderBottom: isAiOpen ? '1px solid var(--border-subtle)' : 'none' }}>
+                </div>
+
+                {/* ─── Column 3: Global AI Assistant ─── */}
+                <div className="ai-sidebar-col">
+                    <div className="ai-sticky-panel glass-panel depth-high">
+                        <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
                             <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
-                                <Sparkles size={16} /> AI SQL Assistant
+                                <Sparkles size={18} /> AI SQL Tutor
                             </span>
-                            <span className="text-muted text-xs">{isAiOpen ? 'Collapse' : 'Expand'}</span>
                         </div>
-                        {isAiOpen && (
-                            <div className="ai-panel-body animate-fade-in" style={{ padding: '1rem' }}>
-                                <div className="ai-chat-messages" style={{ maxHeight: '200px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                                    {chat.map((c, i) => (
-                                        <div key={i} className={`ai-msg glass-panel p-3 text-sm ${c.role === 'user' ? 'user-msg' : ''}`}>{c.msg}</div>
-                                    ))}
-                                    {isThinking && <Loader2 className="animate-spin text-accent-cyan mx-auto" size={16} />}
-                                </div>
+                        <div className="ai-chat-body">
+                            <div className="ai-chat-messages custom-scrollbar">
+                                {chat.map((c, i) => (
+                                    <div key={i} className={`ai-msg-bubble ${c.role === 'user' ? 'user' : 'ai'}`}>
+                                        <div className="msg-content">{c.msg}</div>
+                                    </div>
+                                ))}
+                                {isThinking && (
+                                    <div className="ai-msg-bubble ai">
+                                        <div className="msg-content thinking">
+                                            <Loader2 className="animate-spin" size={14} /> Tutor is thinking...
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="ai-input-area border-t border-subtle">
                                 <div className="flex gap-2">
-                                    <input type="text" placeholder="Ask about this topic..." className="dataset-select" style={{ flex: 1 }}
-                                        value={aiInput} onChange={e => setAiInput(e.target.value)} onKeyPress={e => e.key === 'Enter' && handleSend()} />
-                                    <button className="primary-btn sm-btn" onClick={handleSend}><Send size={14} /></button>
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ask a question..." 
+                                        className="ai-input-field"
+                                        value={aiInput} 
+                                        onChange={e => setAiInput(e.target.value)} 
+                                        onKeyPress={e => e.key === 'Enter' && handleSend()} 
+                                    />
+                                    <button className="primary-btn sm-btn ai-send-btn" onClick={handleSend}>
+                                        <Send size={16} />
+                                    </button>
                                 </div>
                             </div>
-                        )}
+                        </div>
+                        <div className="ai-footer p-3 text-center text-[10px] text-muted uppercase tracking-widest border-t border-subtle">
+                            Real-time AI Feedback
+                        </div>
                     </div>
                 </div>
             </div>

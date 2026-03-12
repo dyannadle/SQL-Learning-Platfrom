@@ -2,7 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
-import { ArrowLeft, Play, LayoutList, CheckCircle, XCircle } from 'lucide-react';
+import { ArrowLeft, Play, LayoutList, CheckCircle, XCircle, Sparkles, Send, Loader2 } from 'lucide-react'; 
+import { getAiResponse } from '../lib/aiService';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { challenges } from '../data/challenges';
@@ -18,28 +19,34 @@ const ChallengeDetail = () => {
     const [status, setStatus] = useState('idle'); // idle, running, pass, fail
     const [showHints, setShowHints] = useState(false);
     const [aiFeedback, setAiFeedback] = useState('');
+    const [aiInput, setAiInput] = useState('');
+    const [chat, setChat] = useState([{ role: 'ai', msg: "I'm your SQL Judge. Submit your query, and I'll analyze your logic, performance, and accuracy!" }]);
+    const [isThinking, setIsThinking] = useState(false);
 
     useEffect(() => {
         const setupEnv = async () => {
             try {
                 await sqlEngine.init();
+                // 1. Reset any existing session for a clean slate
+                await sqlEngine.resetSession();
+
                 // Clear state
                 setResults(null);
                 setError(null);
                 setAiFeedback('');
                 setStatus('idle');
 
-                // Cleanup and setup
-                const tables = ['employees', 'departments', 'logins', 'orders', 'search_logs', 'watch_history'];
-                tables.forEach(t => {
-                    try { sqlEngine.db.run(`DROP TABLE IF EXISTS ${t};`); } catch (e) { }
-                });
+                // 2. Load dataset template (usually 'basic' or 'standard')
+                const template = challenge?.dataset || (challenge?.id.startsWith('j-') ? 'advanced' : 'basic');
+                sqlEngine.loadDataset(template);
 
+                // 3. Run specific challenge setup SQL if provided
                 if (challenge?.setupSQL) {
-                    sqlEngine.db.run(challenge.setupSQL);
+                    await sqlEngine.execute(challenge.setupSQL);
                 }
             } catch (err) {
                 console.error("Env setup failure", err);
+                setError("Failed to setup challenge environment: " + err.message);
             }
         };
         if (challenge) setupEnv();
@@ -49,6 +56,17 @@ const ChallengeDetail = () => {
         return <div className="page-container"><h2>Challenge Not Found</h2></div>;
     }
 
+    const handleSend = async () => {
+        if (!aiInput.trim()) return;
+        const msg = aiInput;
+        setChat(prev => [...prev, { role: 'user', msg }]);
+        setAiInput('');
+        setIsThinking(true);
+        const response = await getAiResponse(msg, `Challenge: ${challenge.title}. Description: ${challenge.description}. Current User Query: ${query}`);
+        setChat(prev => [...prev, { role: 'ai', msg: response }]);
+        setIsThinking(false);
+    };
+
     const runTest = async () => {
         if (!query.trim()) return;
         setStatus('running');
@@ -57,28 +75,28 @@ const ChallengeDetail = () => {
         setAiFeedback('');
 
         try {
-            // 1. Run User Query
-            const userRes = sqlEngine.execute(query);
-
-            // 2. Run Solution Query
-            const expectedRes = sqlEngine.execute(challenge.solution);
-
+            const userRes = await sqlEngine.execute(query);
+            const expectedRes = await sqlEngine.execute(challenge.solution);
             setResults(userRes);
 
-            // 3. Compare JSON representation (MVP validation)
-            const userJSON = JSON.stringify(userRes);
-            const expectedJSON = JSON.stringify(expectedRes);
+            const userJSON = JSON.stringify({ columns: userRes.columns, values: userRes.values });
+            const expectedJSON = JSON.stringify({ columns: expectedRes.columns, values: expectedRes.values });
 
             if (userJSON === expectedJSON) {
                 setStatus('pass');
-                setAiFeedback("Great job! Your solution is correct and matches the expected output.");
+                const feedback = "Correct! Your query produces the exact expected output. Logic is sound.";
+                setAiFeedback(feedback);
+                setChat(prev => [...prev, { role: 'ai', msg: "✓ ACCEPTED: " + feedback }]);
             } else {
                 setStatus('fail');
-                setError("Output mismatch. Check your logic or sort order.");
+                const feedback = "Output mismatch. Check your JOIN conditions or filtering logic.";
+                setError(feedback);
+                setChat(prev => [...prev, { role: 'ai', msg: "✗ WRONG ANSWER: " + feedback }]);
             }
         } catch (err) {
             setStatus('fail');
             setError(err.message);
+            setChat(prev => [...prev, { role: 'ai', msg: "⚠️ ERROR: " + err.message }]);
         }
     };
 
@@ -94,8 +112,8 @@ const ChallengeDetail = () => {
                 </div>
             </div>
 
-            <div className="chal-split-pane">
-                <div className="chal-prompt-side glass-panel p-6">
+            <div className="chal-split-pane three-col-layout">
+                <div className="chal-prompt-side glass-panel depth-high p-6">
                     <div className="prompt-header mb-6">
                         <div className="flex justify-between items-start">
                             <div>
@@ -160,42 +178,68 @@ const ChallengeDetail = () => {
                         </div>
                     </div>
 
-                    <div className="chal-output-area flex gap-4" style={{ height: '40%' }}>
-                        <div className="chal-results-wrapper glass-panel flex-1 flex flex-col">
-                            <div className="editor-tab">
-                                <span className="text-sm font-bold text-muted">Test Results</span>
-                            </div>
-                            <div className="flex-1 overflow-auto p-4">
-                                {error && <div className="error-message p-3 mb-4 bg-red-900/20 text-red-400 rounded-lg">{error}</div>}
-                                {results && results.columns && (
-                                    <div className="overflow-x-auto">
-                                        <table className="results-table w-full">
-                                            <thead><tr>{results.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
-                                            <tbody>
-                                                {results.values.map((row, r) => <tr key={r}>{row.map((v, c) => <td key={c} className="p-2 border-t border-subtle">{v !== null ? v.toString() : 'NULL'}</td>)}</tr>)}
-                                            </tbody>
-                                        </table>
+                    <div className="chal-output-area glass-panel flex flex-col" style={{ height: '40%' }}>
+                        <div className="editor-tab border-b border-subtle">
+                            <span className="text-sm font-bold text-muted">Test Results Output</span>
+                        </div>
+                        <div className="flex-1 overflow-auto p-4">
+                            {error && <div className="error-message p-3 mb-4 bg-red-900/20 text-red-400 rounded-lg">{error}</div>}
+                            {results && results.columns && (
+                                <div className="overflow-x-auto">
+                                    <table className="results-table w-full">
+                                        <thead><tr>{results.columns.map((c, i) => <th key={i}>{c}</th>)}</tr></thead>
+                                        <tbody>
+                                            {results.values.map((row, r) => <tr key={r}>{row.map((v, c) => <td key={c} className="p-2 border-t border-subtle">{v !== null ? v.toString() : 'NULL'}</td>)}</tr>)}
+                                        </tbody>
+                                    </table>
+                                </div>
+                            )}
+                            {status === 'idle' && !results && <div className="text-muted text-center mt-10">Submit your query to see output.</div>}
+                        </div>
+                    </div>
+                </div>
+
+                {/* ─── Column 3: AI SQL Judge Sidebar ─── */}
+                <div className="ai-sidebar-col">
+                    <div className="ai-sticky-panel glass-panel depth-high">
+                        <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
+                            <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
+                                <Sparkles size={18} /> AI SQL Judge
+                            </span>
+                        </div>
+                        <div className="ai-chat-body">
+                            <div className="ai-chat-messages custom-scrollbar">
+                                {chat.map((c, i) => (
+                                    <div key={i} className={`ai-msg-bubble ${c.role === 'user' ? 'user' : 'ai'}`}>
+                                        <div className="msg-content">{c.msg}</div>
+                                    </div>
+                                ))}
+                                {isThinking && (
+                                    <div className="ai-msg-bubble ai">
+                                        <div className="msg-content thinking">
+                                            <Loader2 className="animate-spin" size={14} /> Judge is analyzing...
+                                        </div>
                                     </div>
                                 )}
-                                {status === 'idle' && !results && <div className="text-muted text-center mt-10">Submit your query to see output.</div>}
+                            </div>
+                            <div className="ai-input-area border-t border-subtle">
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ask about this problem..." 
+                                        className="ai-input-field"
+                                        value={aiInput} 
+                                        onChange={e => setAiInput(e.target.value)} 
+                                        onKeyPress={e => e.key === 'Enter' && handleSend()} 
+                                    />
+                                    <button className="primary-btn sm-btn ai-send-btn" onClick={handleSend}>
+                                        <Send size={16} />
+                                    </button>
+                                </div>
                             </div>
                         </div>
-
-                        <div className="chal-ai-judge glass-panel w-1/3 flex flex-col">
-                            <div className="editor-tab flex items-center justify-between">
-                                <span className="text-sm font-bold text-accent-cyan">AI SQL Judge</span>
-                                <div className="h-2 w-2 rounded-full bg-accent-cyan animate-pulse"></div>
-                            </div>
-                            <div className="flex-1 p-4 overflow-auto">
-                                {aiFeedback ? (
-                                    <div className="text-sm text-secondary leading-relaxed animate-fade-in">
-                                        <p className="font-bold text-accent-cyan mb-2">Analysis:</p>
-                                        {aiFeedback}
-                                    </div>
-                                ) : (
-                                    <p className="text-xs text-muted italic">Waiting for submission to analyze performance and logic...</p>
-                                )}
-                            </div>
+                        <div className="ai-footer p-3 text-center text-[10px] text-muted uppercase tracking-widest border-t border-subtle">
+                            Instant Query Validation
                         </div>
                     </div>
                 </div>

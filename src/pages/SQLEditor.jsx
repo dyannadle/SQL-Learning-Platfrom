@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
-import { Play, RotateCcw, Database, Table, AlertCircle, Plus, ChevronDown } from 'lucide-react';
+import { Play, RotateCcw, Database, Table, AlertCircle, Plus, ChevronDown, Sparkles, Send, Loader2 } from 'lucide-react';
+import { getAiResponse } from '../lib/aiService';
 import { sqlEngine } from '../lib/sqlEngine';
 import QueryPlanTree from '../components/QueryVisualizer/QueryPlanTree';
 import './SQLEditor.css';
@@ -28,11 +29,21 @@ const SQLEditor = () => {
     const [activeTab, setActiveTab] = useState('results');
     const [showTemplates, setShowTemplates] = useState(false);
     const [statusMsg, setStatusMsg] = useState('');
+    const [tableSchemas, setTableSchemas] = useState({});
+    const [aiInput, setAiInput] = useState('');
+    const [chat, setChat] = useState([{ role: 'ai', msg: "Hi! I'm your SQL Assistant. I can help you write, debug, and explain complex queries!" }]);
+    const [isThinking, setIsThinking] = useState(false);
 
-    const refreshSchema = useCallback(() => {
-        if (sqlEngine.db) {
-            setTables(sqlEngine.getTables());
+    const refreshSchema = useCallback(async () => {
+        const tableList = await sqlEngine.getTables();
+        setTables(tableList);
+
+        // Fetch schemas for all tables asynchronously
+        const schemas = {};
+        for (const t of tableList) {
+            schemas[t] = await sqlEngine.getSchema(t);
         }
+        setTableSchemas(schemas);
     }, []);
 
     useEffect(() => {
@@ -40,7 +51,7 @@ const SQLEditor = () => {
             try {
                 await sqlEngine.init();
                 sqlEngine.loadDataset(activeDataset);
-                refreshSchema();
+                await refreshSchema();
                 setIsDbLoaded(true);
             } catch (err) {
                 setError("Failed to initialize database: " + err.message);
@@ -49,48 +60,45 @@ const SQLEditor = () => {
         initDb();
     }, [activeDataset, refreshSchema]);
 
-    const handleRunQuery = () => {
+    const handleRunQuery = async () => {
         if (!query.trim()) return;
         const trimmed = query.trim();
         const isDDL = /^\s*(CREATE|DROP|ALTER|INSERT|UPDATE|DELETE|TRUNCATE)/i.test(trimmed);
 
         try {
             setError(null);
-            setStatusMsg('');
+            setStatusMsg('Running...');
             setActiveTab('results');
 
             // Multi-statement support
             const statements = trimmed.split(';').filter(s => s.trim());
             let lastResult = null;
-            let totalChanges = 0;
+            let totalAffected = 0;
+            let totalTime = 0;
 
-            statements.forEach(stmt => {
+            for (const stmt of statements) {
                 const fullStmt = stmt.trim() + ';';
                 try {
-                    const res = sqlEngine.execute(fullStmt);
+                    const res = await sqlEngine.execute(fullStmt);
                     if (res && res.columns && res.columns.length > 0) {
                         lastResult = res;
                     }
-                    if (/^\s*(INSERT|UPDATE|DELETE)/i.test(fullStmt)) {
-                        try {
-                            const changesRes = sqlEngine.db.exec("SELECT changes();");
-                            if (changesRes.length > 0) totalChanges += changesRes[0].values[0][0];
-                        } catch (e) { /* ignore */ }
-                    }
+                    totalAffected += (res.affected_rows || 0);
+                    totalTime += (res.execution_time_ms || 0);
                 } catch (err) {
                     throw new Error(`Error in: ${fullStmt.substring(0, 60)}...\n${err.message}`);
                 }
-            });
+            }
 
             if (lastResult && lastResult.columns && lastResult.columns.length > 0) {
                 setResults(lastResult);
-                setStatusMsg(`${lastResult.values.length} row(s) returned`);
+                setStatusMsg(`${lastResult.values.length} row(s) | ${totalTime.toFixed(1)}ms`);
             } else {
                 setResults({ columns: ['Status'], values: [['✓ Statement(s) executed successfully.']] });
-                setStatusMsg(totalChanges > 0 ? `${totalChanges} row(s) affected` : 'Executed successfully');
+                setStatusMsg(totalAffected > 0 ? `${totalAffected} row(s) affected | ${totalTime.toFixed(1)}ms` : `Executed in ${totalTime.toFixed(1)}ms`);
             }
 
-            if (isDDL) refreshSchema();
+            if (isDDL) await refreshSchema();
         } catch (err) {
             setError(err.message);
             setResults(null);
@@ -98,13 +106,13 @@ const SQLEditor = () => {
         }
     };
 
-    const handleExplainQuery = () => {
+    const handleExplainQuery = async () => {
         if (!query.trim()) return;
         try {
             setError(null);
-            const res = sqlEngine.execute(`EXPLAIN QUERY PLAN ${query}`);
-            if (res && res.values) {
-                setPlanData(res.values);
+            const res = await sqlEngine.execute(query, true); // true for includePlan
+            if (res && res.queryPlan) {
+                setPlanData(res.queryPlan.plan_rows);
                 setActiveTab('plan');
             } else {
                 setError("Could not generate query plan.");
@@ -113,6 +121,17 @@ const SQLEditor = () => {
             setError("EXPLAIN failed: " + err.message);
             setPlanData(null);
         }
+    };
+
+    const handleSend = async () => {
+        if (!aiInput.trim()) return;
+        const userMsg = aiInput;
+        setChat(prev => [...prev, { role: 'user', msg: userMsg }]);
+        setAiInput('');
+        setIsThinking(true);
+        const response = await getAiResponse(userMsg);
+        setChat(prev => [...prev, { role: 'ai', msg: response }]);
+        setIsThinking(false);
     };
 
     const loadDataset = (e) => {
@@ -184,7 +203,7 @@ const SQLEditor = () => {
                 </div>
             </div>
 
-            <div className="editor-layout">
+            <div className="editor-layout three-col-layout">
                 <div className="editor-sidebar glass-panel">
                     <h3 className="sidebar-title flex items-center gap-2">
                         <Database size={16} /> Schema Browser
@@ -209,7 +228,7 @@ const SQLEditor = () => {
                                     <span>{tableName}</span>
                                 </div>
                                 <div className="table-columns">
-                                    {sqlEngine.getSchema(tableName).map(col => (
+                                    {(tableSchemas[tableName] || []).map(col => (
                                         <div key={col.name} className="column-item flex justify-between">
                                             <span className="col-name">
                                                 {col.pk ? '🔑 ' : ''}{col.name}
@@ -323,8 +342,53 @@ const SQLEditor = () => {
                         </div>
                     </div>
                 </div>
+                </div>
+
+                {/* ─── Column 3: AI Assistant ─── */}
+                <div className="ai-sidebar-col">
+                    <div className="ai-sticky-panel glass-panel depth-high">
+                        <div className="ai-header flex justify-between items-center p-4 border-b border-subtle">
+                            <span className="flex items-center gap-2 font-bold text-sm" style={{ color: 'var(--accent-cyan)' }}>
+                                <Sparkles size={18} /> AI SQL Tutor
+                            </span>
+                        </div>
+                        <div className="ai-chat-body">
+                            <div className="ai-chat-messages custom-scrollbar">
+                                {chat.map((c, i) => (
+                                    <div key={i} className={`ai-msg-bubble ${c.role === 'user' ? 'user' : 'ai'}`}>
+                                        <div className="msg-content">{c.msg}</div>
+                                    </div>
+                                ))}
+                                {isThinking && (
+                                    <div className="ai-msg-bubble ai">
+                                        <div className="msg-content thinking">
+                                            <Loader2 className="animate-spin" size={14} /> Tutor is thinking...
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                            <div className="ai-input-area border-t border-subtle">
+                                <div className="flex gap-2">
+                                    <input 
+                                        type="text" 
+                                        placeholder="Ask a question..." 
+                                        className="ai-input-field"
+                                        value={aiInput} 
+                                        onChange={e => setAiInput(e.target.value)} 
+                                        onKeyPress={e => e.key === 'Enter' && handleSend()} 
+                                    />
+                                    <button className="primary-btn sm-btn ai-send-btn" onClick={handleSend}>
+                                        <Send size={16} />
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        <div className="ai-footer p-3 text-center text-[10px] text-muted uppercase tracking-widest border-t border-subtle">
+                            Real-time AI Playground Help
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
     );
 };
 

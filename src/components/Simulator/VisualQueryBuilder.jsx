@@ -29,7 +29,9 @@ const VisualQueryBuilder = () => {
     const handleExecute = async () => {
         try {
             await sqlEngine.init();
-            const res = sqlEngine.execute(generatedSql);
+            // Optional: Ensure a dataset is loaded if needed
+            // sqlEngine.loadDataset('ecommerce');
+            const res = await sqlEngine.execute(generatedSql);
             setResults(res);
             setError(null);
         } catch (err) {

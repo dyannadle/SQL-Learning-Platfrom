@@ -1,10 +1,9 @@
-import initSqlJs from 'sql.js';
-import sqlWasmUrl from 'sql.js/dist/sql-wasm.wasm?url';
-import { datasets } from '../data/datasets';
+const BACKEND_URL = "http://127.0.0.1:8000";
 
 class SQLEngine {
     constructor() {
-        this.db = null;
+        this.currentDataset = "empty";
+        this.sessionId = null;
         this.initPromise = null;
     }
 
@@ -13,83 +12,93 @@ class SQLEngine {
 
         this.initPromise = (async () => {
             try {
-                const SQL = await initSqlJs({
-                    // Fetch WASM using Vite URL import to bypass public folder caching issues
-                    locateFile: file => sqlWasmUrl
-                });
-                this.db = new SQL.Database();
+                const res = await fetch(`${BACKEND_URL}/health`);
+                if (!res.ok) throw new Error("Backend not healthy");
                 return true;
             } catch (err) {
-                console.error("Failed to initialize sql.js:", err);
-                throw err;
+                console.error("Failed to connect to backend:", err);
+                return false;
             }
         })();
 
         return this.initPromise;
     }
 
-    loadDataset(name) {
-        if (!this.db) throw new Error("Database not initialized");
-
-        // Keep track of loaded datasets to prevent duplicate execution errors
-        if (!this.loadedDatasets) this.loadedDatasets = new Set();
-        if (this.loadedDatasets.has(name)) return true;
-
-        const sqlString = datasets[name];
-        if (!sqlString) throw new Error(`Dataset ${name} not found`);
-
-        try {
-            this.db.run(sqlString);
-            this.loadedDatasets.add(name);
-            return true;
-        } catch (err) {
-            // If it fails because table exists, we still mark it as loaded
-            if (err.message.includes("already exists")) {
-                this.loadedDatasets.add(name);
-                return true;
+    async resetSession() {
+        if (this.sessionId) {
+            try {
+                await fetch(`${BACKEND_URL}/cleanup/${this.sessionId}`, { method: 'POST' });
+            } catch (e) {
+                console.warn("Cleanup failed", e);
             }
-            console.error(`Failed to load dataset ${name}:`, err);
-            throw err;
         }
+        this.sessionId = null;
+        return true;
     }
 
-    execute(query) {
-        if (!this.db) throw new Error("Database not initialized");
+    loadDataset(name) {
+        if (this.currentDataset !== name) {
+            this.currentDataset = name || "empty";
+            // If dataset changes, we should probably reset session to get fresh seed
+            this.resetSession();
+        }
+        return true;
+    }
 
+    async execute(query, includePlan = false) {
         try {
-            const results = this.db.exec(query);
-            if (results.length === 0) return { columns: [], values: [] };
-            return results[0]; // returns { columns: ['a', 'b'], values: [[1, 2], [3, 4]] }
+            const response = await fetch(`${BACKEND_URL}/execute`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query,
+                    dataset: this.currentDataset,
+                    include_plan: includePlan,
+                    session_id: this.sessionId
+                })
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.detail || "Database Error");
+            }
+
+            if (data.error) {
+                throw new Error(data.error);
+            }
+
+            // Capture session ID from first execution
+            if (!this.sessionId && data.session_id) {
+                this.sessionId = data.session_id;
+            }
+
+            return {
+                columns: data.columns,
+                values: data.rows,
+                affected_rows: data.affected_rows,
+                execution_time_ms: data.execution_time_ms,
+                queryPlan: data.query_plan
+            };
         } catch (err) {
             throw new Error(err.message);
         }
     }
 
-    getTables() {
-        if (!this.db) return [];
-
+    async getTables() {
         try {
-            const query = "SELECT name FROM sqlite_master WHERE type='table';";
-            const results = this.db.exec(query);
-            if (results.length === 0) return [];
-
-            return results[0].values.map(row => row[0]);
+            const res = await this.execute("SELECT name FROM sqlite_master WHERE type='table';");
+            return res.values.map(row => row[0]);
         } catch (err) {
             console.error("Failed to get tables:", err);
             return [];
         }
     }
 
-    getSchema(tableName) {
-        if (!this.db) return [];
-
+    async getSchema(tableName) {
         try {
-            const query = `PRAGMA table_info(${tableName});`;
-            const results = this.db.exec(query);
-            if (results.length === 0) return [];
-
-            // format: [{ cid: 0, name: 'id', type: 'INTEGER', notnull: 0, dflt_value: null, pk: 1 }]
-            return results[0].values.map(row => ({
+            const res = await this.execute(`PRAGMA table_info(${tableName});`);
+            return res.values.map(row => ({
                 cid: row[0],
                 name: row[1],
                 type: row[2],
@@ -105,3 +114,5 @@ class SQLEngine {
 }
 
 export const sqlEngine = new SQLEngine();
+
+
