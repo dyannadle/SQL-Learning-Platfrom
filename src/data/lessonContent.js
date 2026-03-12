@@ -1023,6 +1023,148 @@ CREATE TABLE products (
                 "Explain why 'Full Name' is a bad Primary Key choice."
             ]
         }
+    },
+    // ═══════════════════════════════════════════════
+    // LEVEL 3: Querying Data Deeply — Module 13 & 14
+    // ═══════════════════════════════════════════════
+    "level-3-m13-0": {
+        theory: `
+# 13.1 Aggregate Functions — High-Level Data Analysis
+
+Aggregate functions perform a calculation on a set of values and return a single value. They are the primary tools for generating reports and summaries.
+
+### 📋 The "Big Five" Aggregates
+
+| Function | Description | Example |
+|:---|:---|:---|
+| **COUNT()** | Returns number of rows | \`SELECT COUNT(*) FROM users;\` |
+| **SUM()** | Returns total sum | \`SELECT SUM(salary) FROM staff;\` |
+| **AVG()** | Returns average value | \`SELECT AVG(price) FROM products;\` |
+| **MIN()** | Returns smallest value | \`SELECT MIN(age) FROM students;\` |
+| **MAX()** | Returns largest value | \`SELECT MAX(score) FROM results;\` |
+
+### 🔍 COUNT Variations
+- \`COUNT(*)\`: Counts all rows, including NULLs.
+- \`COUNT(column)\`: Counts only non-NULL values in that column.
+- \`COUNT(DISTINCT column)\`: Counts unique non-NULL values.
+
+### 💡 Examples
+\`\`\`sql
+-- Total revenue this month
+SELECT SUM(total_price) AS revenue FROM orders;
+
+-- Number of unique cities we operate in
+SELECT COUNT(DISTINCT city) FROM customers;
+
+-- Average order value for high-end products
+SELECT AVG(price) FROM products WHERE price > 500;
+\`\`\`
+
+> **Pro Tip**: Use \`ROUND(AVG(salary), 2)\` to keep your averages clean for UI display.
+        `,
+        lab: {
+            mission: "Extract high-level metrics from the ecommerce database.",
+            tasks: [
+                "Find the total number of products in the database.",
+                "Calculate the total inventory value (SUM of price * stock).",
+                "Find the lowest and highest product prices.",
+                "Calculate the average rating of all products.",
+                "Count how many unique categories exist."
+            ]
+        }
+    },
+
+    "level-3-m14-1": {
+        theory: `
+# 14.2 GROUP BY & HAVING — Categorical Insights
+
+Aggregates are most powerful when grouped into categories.
+
+### 📊 GROUP BY Syntax
+\`\`\`sql
+SELECT category, COUNT(*) AS count
+FROM products
+GROUP BY category;
+\`\`\`
+
+### 🎯 HAVING — The Aggregate Filter
+You cannot use \`WHERE\` to filter on aggregate results (like \`WHERE COUNT(*) > 5\`). You must use **HAVING**.
+
+\`\`\`sql
+SELECT category, AVG(price) AS avg_price
+FROM products
+GROUP BY category
+HAVING AVG(price) > 50;  -- Filter categories, not rows
+\`\`\`
+
+### ⚠️ Execution Order Recap
+1. \`FROM\` & \`JOIN\`
+2. \`WHERE\` (Filters individual rows)
+3. \`GROUP BY\` (Groups rows into categories)
+4. \`HAVING\` (Filters aggregated groups)
+5. \`SELECT\` (Chooses columns/aggregates)
+6. \`ORDER BY\` (Final sorting)
+        `,
+        lab: {
+            mission: "Perform categorical analysis on sales data.",
+            tasks: [
+                "Group products by category and count them.",
+                "Find the average price per category.",
+                "Use HAVING to list categories with more than 10 products.",
+                "Find the most expensive product in each category.",
+                "Sort the categories by their total inventory value descending."
+            ]
+        }
+    },
+
+    // ═══════════════════════════════════════════════
+    // LEVEL 4: SQL Joins — Module 17: Join Fundamentals
+    // ═══════════════════════════════════════════════
+    "level-4-m17-2": {
+        theory: `
+# 17.3 INNER JOIN — The Standard Connection
+
+Joins allow you to query data from two or more tables based on a related column between them.
+
+### 🔗 The Relational Link
+Imagine an **orders** table and a **customers** table. Instead of storing the customer name in every order (redundant), we store a \`customer_id\`.
+
+### 🧬 INNER JOIN Syntax
+An INNER JOIN returns only rows where there is a match in both tables.
+
+\`\`\`sql
+SELECT orders.order_id, customers.name, orders.total
+FROM orders
+INNER JOIN customers ON orders.customer_id = customers.id;
+\`\`\`
+
+### 🖼️ Visualizing Joins
+Think of two circles (Venn Diagram). The **INNER JOIN** is the intersection where they overlap.
+
+| Join Type | Result |
+|:---|:---|
+| **INNER** | Only matches |
+| **LEFT** | All from left + matches from right |
+| **RIGHT** | All from right + matches from left |
+| **FULL** | All from both (matches + non-matches) |
+
+### 💡 Best Practice: Use Aliases
+\`\`\`sql
+SELECT o.order_id, c.name, o.amount
+FROM orders o
+JOIN customers c ON o.customer_id = c.id;  -- JOIN is shorthand for INNER JOIN
+\`\`\`
+`,
+        lab: {
+            mission: "Link orders to customers using INNER JOIN.",
+            tasks: [
+                "Fetch all orders along with the customer's name.",
+                "Join products with categories to show product names and category descriptions.",
+                "Calculate total revenue per customer (JOIN + GROUP BY).",
+                "Find customers who have placed an order in the last 30 days.",
+                "Use table aliases (o, c, p) to make your queries more readable."
+            ]
+        }
     }
 };
 

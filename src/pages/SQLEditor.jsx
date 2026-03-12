@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import CodeMirror from '@uiw/react-codemirror';
 import { sql } from '@codemirror/lang-sql';
 import { sqlEngine } from '../lib/sqlEngine';
+import { Database, Table, Play, Plus, ChevronDown, RotateCcw } from 'lucide-react';
 import QueryPlanTree from '../components/QueryVisualizer/QueryPlanTree';
 import './SQLEditor.css';
 
@@ -17,17 +18,17 @@ const SQL_TEMPLATES = [
 ];
 
 const SQLEditor = () => {
-    const [query, setQuery] = useState('SELECT * FROM employees;');
+    const [query, setQuery] = useState('SELECT * FROM ecommerce;');
     const [results, setResults] = useState(null);
     const [error, setError] = useState(null);
-    const [isDbLoaded, setIsDbLoaded] = useState(false);
     const [tables, setTables] = useState([]);
-    const [activeDataset, setActiveDataset] = useState('employees');
+    const [tableSchemas, setTableSchemas] = useState({});
+    const [availableDatasets, setAvailableDatasets] = useState(['ecommerce']);
+    const [activeDataset, setActiveDataset] = useState('ecommerce');
     const [planData, setPlanData] = useState(null);
     const [activeTab, setActiveTab] = useState('results');
     const [showTemplates, setShowTemplates] = useState(false);
     const [statusMsg, setStatusMsg] = useState('');
-    const [tableSchemas, setTableSchemas] = useState({});
 
     const refreshSchema = useCallback(async () => {
         const tableList = await sqlEngine.getTables();
@@ -42,17 +43,33 @@ const SQLEditor = () => {
     }, []);
 
     useEffect(() => {
-        const initDb = async () => {
+        const fetchDatasets = async () => {
+            try {
+                const res = await fetch('http://127.0.0.1:8000/datasets');
+                const data = await res.json();
+                if (data.datasets && data.datasets.length > 0) {
+                    setAvailableDatasets(data.datasets);
+                    setActiveDataset(data.datasets[0]); // Set the first dataset as active
+                    setQuery(`SELECT * FROM ${data.datasets[0]};`);
+                }
+            } catch (err) {
+                console.error("Failed to fetch datasets", err);
+            }
+        };
+        fetchDatasets();
+    }, []);
+
+    useEffect(() => {
+        const loadSchema = async () => {
             try {
                 await sqlEngine.init();
                 sqlEngine.loadDataset(activeDataset);
                 await refreshSchema();
-                setIsDbLoaded(true);
             } catch (err) {
                 setError("Failed to initialize database: " + err.message);
             }
         };
-        initDb();
+        loadSchema();
     }, [activeDataset, refreshSchema]);
 
     const handleRunQuery = async () => {
@@ -62,6 +79,7 @@ const SQLEditor = () => {
 
         try {
             setError(null);
+            setPlanData(null); // Clear plan data on new query run
             setStatusMsg('Running...');
             setActiveTab('results');
 
@@ -105,26 +123,37 @@ const SQLEditor = () => {
         if (!query.trim()) return;
         try {
             setError(null);
+            setResults(null); // Clear results on explain
+            setStatusMsg('Explaining...');
             const res = await sqlEngine.execute(query, true); // true for includePlan
             if (res && res.queryPlan) {
                 setPlanData(res.queryPlan.plan_rows);
                 setActiveTab('plan');
+                setStatusMsg('Query plan generated.');
             } else {
                 setError("Could not generate query plan.");
+                setPlanData(null);
+                setStatusMsg('');
             }
         } catch (err) {
             setError("EXPLAIN failed: " + err.message);
             setPlanData(null);
+            setStatusMsg('');
         }
     };
 
-    const loadDataset = (e) => {
+    const loadDataset = async (e) => {
         const ds = e.target.value;
         setActiveDataset(ds);
-        setQuery(ds === 'employees' ? 'SELECT * FROM employees;' : 'SELECT * FROM products;');
+        setQuery(`SELECT * FROM ${ds} LIMIT 20;`);
         setResults(null);
         setError(null);
-        setStatusMsg('');
+        setStatusMsg(`Loading ${ds}...`);
+        
+        await sqlEngine.init();
+        sqlEngine.loadDataset(ds);
+        refreshSchema();
+        setStatusMsg(`${ds.charAt(0).toUpperCase() + ds.slice(1)} DB Loaded.`);
     };
 
     return (
@@ -134,8 +163,9 @@ const SQLEditor = () => {
                     <Database className="text-accent-cyan" size={20} />
                     <h1 className="editor-title">SQL Playground</h1>
                     <select className="dataset-select" value={activeDataset} onChange={loadDataset}>
-                        <option value="employees">Employees DB</option>
-                        <option value="ecommerce">E-Commerce DB</option>
+                        {availableDatasets.map(ds => (
+                            <option key={ds} value={ds}>{ds.charAt(0).toUpperCase() + ds.slice(1)} DB</option>
+                        ))}
                     </select>
                 </div>
 
@@ -178,11 +208,26 @@ const SQLEditor = () => {
                     <button className="secondary-btn" onClick={() => { setQuery(''); setStatusMsg(''); }}>
                         <RotateCcw size={16} /> Clear
                     </button>
-                    <button className="secondary-btn" onClick={handleExplainQuery} disabled={!isDbLoaded}>
+                    <button className="secondary-btn" onClick={handleExplainQuery} disabled={!activeDataset}>
                         Explain
                     </button>
-                    <button className="primary-btn run-btn" onClick={handleRunQuery} disabled={!isDbLoaded}>
-                        <Play size={16} fill="white" /> {isDbLoaded ? 'Run' : 'Loading...'}
+                    <button 
+                        className="secondary-btn" 
+                        style={{ borderColor: 'rgba(239, 68, 68, 0.3)', color: 'var(--accent-red)' }}
+                        onClick={async () => {
+                            if (window.confirm("This will permanently wipe your playground data and reset to the default template. Continue?")) {
+                                await sqlEngine.resetSession();
+                                await refreshSchema();
+                                setResults(null);
+                                setQuery(`SELECT * FROM ${activeDataset} LIMIT 20;`);
+                                setStatusMsg("Sandbox Reset Successfully.");
+                            }
+                        }}
+                    >
+                        Reset DB
+                    </button>
+                    <button className="primary-btn run-btn" onClick={handleRunQuery} disabled={!activeDataset}>
+                        <Play size={16} fill="white" /> {activeDataset ? 'Run' : 'Loading...'}
                     </button>
                 </div>
             </div>
@@ -197,27 +242,33 @@ const SQLEditor = () => {
                     </p>
                     <div className="schema-tree">
                         {tables.length === 0 ? (
-                            <p className="text-muted text-sm" style={{ padding: '1rem' }}>
-                                No tables yet. Use <strong>Templates → Create Table</strong> to get started!
-                            </p>
+                            <div className="empty-schema p-4 text-center opacity-60">
+                                <Database size={32} className="mx-auto mb-2 opacity-20" />
+                                <p className="text-xs">No tables found.</p>
+                                <button className="secondary-btn sm-btn mt-2" onClick={refreshSchema}>Retry</button>
+                            </div>
                         ) : tables.map(tableName => (
-                            <div key={tableName} className="schema-table">
+                            <div key={tableName} className="schema-table-group">
                                 <div
-                                    className="table-name flex items-center gap-2"
-                                    style={{ cursor: 'pointer' }}
-                                    onClick={() => setQuery(`SELECT * FROM ${tableName} LIMIT 20;`)}
-                                    title={`Click to query ${tableName}`}
+                                    className="table-item flex items-center justify-between"
+                                    onClick={() => setQuery(`SELECT * FROM ${tableName} LIMIT 50;`)}
                                 >
-                                    <Table size={14} className="text-muted" />
-                                    <span>{tableName}</span>
+                                    <div className="flex items-center gap-2">
+                                        <Table size={14} className="text-accent-cyan" />
+                                        <span className="table-name-text">{tableName}</span>
+                                    </div>
+                                    <span className="row-count-badge">{(tableSchemas[tableName] || []).length} cols</span>
                                 </div>
-                                <div className="table-columns">
+                                <div className="column-list">
                                     {(tableSchemas[tableName] || []).map(col => (
-                                        <div key={col.name} className="column-item flex justify-between">
-                                            <span className="col-name">
-                                                {col.pk ? '🔑 ' : ''}{col.name}
-                                            </span>
-                                            <span className="col-type">{col.type || 'ANY'}</span>
+                                        <div key={col.name} className="column-entry flex justify-between items-center">
+                                            <div className="flex items-center gap-2">
+                                                <div className={`col-indicator ${col.pk ? 'pk' : ''}`}></div>
+                                                <span className={`col-name ${col.pk ? 'is-pk' : ''}`}>
+                                                    {col.name}
+                                                </span>
+                                            </div>
+                                            <span className="col-datatype">{col.type.toLowerCase() || 'any'}</span>
                                         </div>
                                     ))}
                                 </div>
@@ -290,37 +341,52 @@ const SQLEditor = () => {
 
                         <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
                             {error ? (
-                                <div className="error-message flex items-center gap-2" style={{ margin: '1rem', whiteSpace: 'pre-wrap' }}>
-                                    <AlertCircle size={18} color="var(--accent-red)" style={{ flexShrink: 0 }} />
-                                    {error}
+                                <div className="error-state p-6 animate-shake">
+                                    <div className="error-card glass-panel flex items-start gap-4 p-4 border-accent-red">
+                                        <XCircle className="text-accent-red mt-1" size={20} />
+                                        <div className="error-text">
+                                            <h4 className="m-0 text-accent-red">Syntax Error</h4>
+                                            <p className="m-0 mt-1 text-sm opacity-80">{error}</p>
+                                        </div>
+                                    </div>
                                 </div>
                             ) : activeTab === 'plan' && planData ? (
-                                <QueryPlanTree planData={planData} />
+                                <div className="p-4 h-full overflow-auto">
+                                    <QueryPlanTree planData={planData} />
+                                </div>
                             ) : activeTab === 'results' && results ? (
-                                <div className="table-responsive">
-                                    <table className="results-table">
-                                        <thead>
-                                            <tr>
-                                                {results.columns.map((col, i) => <th key={i}>{col}</th>)}
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            {results.values.map((row, rIdx) => (
-                                                <tr key={rIdx}>
-                                                    {row.map((val, cIdx) => (
-                                                        <td key={cIdx}>{val !== null ? val.toString() : <em style={{ color: 'var(--text-muted)' }}>NULL</em>}</td>
-                                                    ))}
+                                <div className="results-wrapper h-full flex flex-col">
+                                    <div className="results-scroll flex-1 overflow-auto">
+                                        <table className="results-table">
+                                            <thead className="sticky top-0">
+                                                <tr>
+                                                    {results.columns.map((col, i) => <th key={i}>{col}</th>)}
                                                 </tr>
-                                            ))}
-                                        </tbody>
-                                    </table>
+                                            </thead>
+                                            <tbody>
+                                                {results.values.length > 0 ? (
+                                                    results.values.map((row, i) => (
+                                                        <tr key={i} className="animate-fade-in" style={{ animationDelay: `${i * 0.02}s` }}>
+                                                            {row.map((val, j) => (
+                                                                <td key={j}>{val === null ? <em className="text-muted">NULL</em> : val.toString()}</td>
+                                                            ))}
+                                                        </tr>
+                                                    ))
+                                                ) : (
+                                                    <tr>
+                                                        <td colSpan={results.columns.length} className="empty-state py-10 text-center text-muted">
+                                                            Query executed successfully but returned no rows.
+                                                        </td>
+                                                    </tr>
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
                             ) : (
-                                <div className="empty-results text-center text-muted" style={{ marginTop: '3rem' }}>
-                                    <p style={{ fontSize: '1.1rem', marginBottom: '0.5rem' }}>Write SQL and click Run</p>
-                                    <p style={{ fontSize: '0.85rem', opacity: 0.7 }}>
-                                        Full CRUD: CREATE, INSERT, SELECT, UPDATE, DELETE, ALTER, DROP
-                                    </p>
+                                <div className="empty-results flex flex-col items-center justify-center h-full text-muted opacity-40">
+                                    <Terminal size={48} className="mb-4" />
+                                    <p className="text-lg">Run a query to view results here</p>
                                 </div>
                             )}
                         </div>
